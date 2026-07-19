@@ -11,7 +11,7 @@ export type ReviewRecord = {
 
 type RawModuleMap = Record<string, string>;
 
-const rawModules = import.meta.glob("../../reviews/**/*.md", {
+const rawModules = import.meta.glob("../../../reviews/**/*.md", {
   eager: true,
   import: "default",
   query: "?raw",
