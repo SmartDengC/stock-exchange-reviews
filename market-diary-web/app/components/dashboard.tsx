@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ThemeToggle } from "./theme-toggle";
 import {
   changeTone,
   dailyReviews,
@@ -80,7 +81,7 @@ export function Dashboard({ review }: { review: ReviewRecord | null }) {
     </aside>
 
     <section className="workspace">
-      <header className="topbar"><div><span className="eyebrow">WEEKLY INTELLIGENCE / {review.slug}</span><h1>风险偏好已切换至 <em>防御模式</em></h1></div><Link className="source-link" href={`/report/weekly/${review.slug}`}>阅读完整周报 <span>↗</span></Link></header>
+      <header className="topbar"><div><span className="eyebrow">WEEKLY INTELLIGENCE / {review.slug}</span><h1>风险偏好已切换至 <em>防御模式</em></h1></div><div className="topbar-actions"><ThemeToggle /><Link className="source-link" href={`/report/weekly/${review.slug}`}>阅读完整周报 <span>↗</span></Link></div></header>
 
       <section className="hero-grid">
         <article className="thesis-card">
