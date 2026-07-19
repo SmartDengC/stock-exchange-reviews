@@ -77,15 +77,15 @@ export function Dashboard({ review }: { review: ReviewRecord | null }) {
     <aside className="side-rail" aria-label="主要导航">
       <Link className="brand" href="/"><span className="brand-mark">M</span><span>市场日记<small>MARKET DIARY</small></span></Link>
       <nav>
-        <Link className="nav-item active" href="/"><span>01</span>周度驾驶舱</Link>
-        <a className="nav-item" href="#archives"><span>02</span>复盘归档</a>
-        <a className="nav-item" href="#drivers"><span>03</span>驱动框架</a>
-        <a className="nav-item" href="#outlook"><span>04</span>下周情景</a>
+        <a className="nav-item active" href="#dashboard"><span>01</span>周度驾驶舱</a>
+        <a className="nav-item" href="#drivers"><span>02</span>驱动框架</a>
+        <a className="nav-item" href="#outlook"><span>03</span>下周情景</a>
+        <a className="nav-item" href="#archives"><span>04</span>复盘归档</a>
       </nav>
       <div className="rail-bottom"><span className="live-dot" />资料库已同步<br /><small>BUILD-TIME INDEX</small></div>
     </aside>
 
-    <section className="workspace">
+    <section id="dashboard" className="workspace">
       <header className="topbar"><div><span className="eyebrow">WEEKLY INTELLIGENCE / {review.slug}</span><h1>风险偏好已切换至 <em>防御模式</em></h1></div><div className="topbar-actions"><ThemeToggle /><Link className="source-link" href={`/report/weekly/${review.slug}`}>阅读完整周报 <span>↗</span></Link></div></header>
 
       <section className="hero-grid">
