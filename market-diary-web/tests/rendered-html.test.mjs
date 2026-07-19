@@ -15,5 +15,7 @@ test("ships the market-diary product instead of the starter preview", async () =
   assert.match(dashboard, /跨市场表现/);
   assert.match(dashboard, /不构成任何投资建议/);
   assert.match(reviewSource, /generatedReviews/);
+  assert.match(reviewSource, /dailyMatch/);
+  assert.match(reviewSource, /weeklyMatch/);
   assert.doesNotMatch(page, /SkeletonPreview|codex-preview/);
 });

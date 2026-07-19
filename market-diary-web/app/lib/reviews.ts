@@ -41,10 +41,12 @@ export function parseTables(markdown: string): Table[] {
   return tables;
 }
 
-function recordFromPath(path: string, raw: string): ReviewRecord {
-  const isWeekly = path.includes("/weekly/");
-  const match = path.match(/(\d{4}-(?:W\d{2}|\d{2}-\d{2}))\.md$/);
-  const slug = match?.[1] ?? path;
+function recordFromPath(path: string, raw: string): ReviewRecord | null {
+  const weeklyMatch = path.match(/reviews\/weekly\/(\d{4}-W\d{2})\.md$/);
+  const dailyMatch = path.match(/reviews\/(\d{4}-\d{2}-\d{2})\.md$/);
+  const isWeekly = Boolean(weeklyMatch);
+  const slug = weeklyMatch?.[1] ?? dailyMatch?.[1];
+  if (!slug) return null;
   const title = raw.match(/^#\s+(.+)$/m)?.[1]?.replace(/^📊\s*/, "") ?? slug;
   const date = raw.match(/\*\*时间范围：\*\*\s*([^\n]+)/)?.[1]
     ?? raw.match(/\*\*报告日期：\*\*\s*([^\n]+)/)?.[1]
@@ -55,6 +57,7 @@ function recordFromPath(path: string, raw: string): ReviewRecord {
 
 export const reviews = Object.entries(generatedReviews)
   .map(([path, raw]) => recordFromPath(path, raw))
+  .filter((review): review is ReviewRecord => review !== null)
   .sort((left, right) => right.slug.localeCompare(left.slug));
 
 export const weeklyReviews = reviews.filter((review) => review.kind === "weekly");
