@@ -79,3 +79,18 @@ pnpm run lint      # 运行静态检查
 - `/`：最新周报驾驶舱与归档入口
 - `/report/weekly/YYYY-Wxx`：周报详情
 - `/report/daily/YYYY-MM-DD`：日报详情
+
+## Vercel 部署
+
+本项目已使用原生 Next.js 构建，会生成 Vercel 所需的 `.next/` 目录。导入仓库时使用以下设置：
+
+| 设置项 | 值 |
+| --- | --- |
+| Framework Preset | `Next.js` |
+| Root Directory | `market-diary-web` |
+| Install Command | 留空（使用 `npm install`） |
+| Build Command | 留空（使用 `npm run build`） |
+| Output Directory | 留空（`Next.js default`） |
+| Node.js Version | `22.x` |
+
+不要将 Output Directory 设置为 `dist`。构建前会自动把仓库根目录的 `reviews/` 同步至应用内数据模块，因此 Vercel 可以读取并预渲染全部报告页面。
