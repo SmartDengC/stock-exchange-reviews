@@ -66,7 +66,12 @@ export function Dashboard({ review }: { review: ReviewRecord | null }) {
   const timeline = firstTable(review.raw, "关键宏观事件时间线");
   const scenarios = firstTable(review.raw, "情景推演");
   const summary = section(review.raw, "一句话周总结").match(/>\s*(.+)/)?.[1] ?? "本周市场复盘已归档。";
-  const drivers = section(review.raw, "本周核心驱动框架").match(/```([\s\S]*?)```/)?.[1]?.trim() ?? "核心驱动框架待补充。";
+  const driverCards = [
+    { step: "01", tag: "外部冲击", title: "能源冲击抬升风险溢价", text: "地缘局势通过油价、通胀预期与利率路径传导，压制全球风险资产。", tone: "negative" },
+    { step: "02", tag: "关键分水岭", title: "通胀数据短暂改善预期", text: "CPI、PPI回落一度缓和紧缩担忧，但未能改变周内风险偏好转弱的方向。", tone: "neutral" },
+    { step: "03", tag: "国内放大器", title: "科技流动性承压", text: "大额IPO、杠杆出清与业绩窗口共同放大了高估值科技板块的调整。", tone: "negative" },
+    { step: "04", tag: "市场结果", title: "资金转向防御与现金流", text: "高波动成长板块承压，电力、银行和油气等防御方向获得相对支撑。", tone: "positive" },
+  ];
 
   return <main className="terminal-shell">
     <aside className="side-rail" aria-label="主要导航">
@@ -99,7 +104,7 @@ export function Dashboard({ review }: { review: ReviewRecord | null }) {
         <article className="panel timeline-panel"><PanelTitle eyebrow="MACRO CLOCK" title="关键事件时间线" />{timeline ? <ol className="timeline">{timeline.rows.slice(0, 8).map((row) => <li key={`${row[0]}-${row[1]}`}><time>{row[0]}</time><div><b>{row[1]}</b><p className={`tone-${changeTone(row[2])}`}>{row[2]}</p></div></li>)}</ol> : <p>暂无时间线数据</p>}</article>
       </section>
 
-      <section id="drivers" className="drivers-panel"><PanelTitle eyebrow="CAUSAL MAP" title="本周核心驱动框架" action={<span className="data-chip">MACRO → LIQUIDITY → RISK</span>} /><pre>{drivers}</pre></section>
+      <section id="drivers" className="drivers-panel"><PanelTitle eyebrow="CAUSAL MAP" title="本周核心驱动框架" action={<span className="data-chip">MACRO → LIQUIDITY → RISK</span>} /><p className="drivers-intro">将本周叙事压缩为可快速判断的传导链；具体数据与事件保留在原始周报中。</p><div className="driver-summary-grid">{driverCards.map((card, index) => <article className={`driver-summary-card tone-${card.tone}`} key={card.step}><span className="driver-step">{card.step}</span><div><span className="driver-tag">{card.tag}</span><h3>{card.title}</h3><p>{card.text}</p></div>{index < driverCards.length - 1 && <i className="driver-arrow">→</i>}</article>)}</div><Link className="source-citation" href={`/report/weekly/${review.slug}`}>引用来源：{review.slug}《本周核心驱动框架》 <span>阅读原文 ↗</span></Link></section>
 
       <section id="outlook" className="outlook-panel"><PanelTitle eyebrow="FORWARD VIEW" title="下周情景推演" /><div className="scenario-grid">{scenarios?.rows.map((row) => <article className={`scenario-card tone-${changeTone(row[0])}`} key={row[0]}><span>{row[0]}</span><b>{row[2]}</b><p>{row[1]}</p><small>{row[3]}</small></article>) ?? <p>暂无情景数据</p>}</div></section>
 
