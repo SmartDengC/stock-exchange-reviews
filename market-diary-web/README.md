@@ -12,7 +12,7 @@ cd market-diary-web
 npm run dev
 ```
 
-打开终端提示的本地地址即可查看。新增或修改 Markdown 后，重新运行 `npm run build`（或在开发服务器运行时等待刷新）便会更新页面内容。
+打开终端提示的本地地址即可查看。新增或修改 Markdown 后，重新启动开发服务器或运行 `npm run build`，页面便会同步最新资料。
 
 ## 常用命令
 

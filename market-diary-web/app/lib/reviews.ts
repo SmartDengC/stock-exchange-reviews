@@ -1,3 +1,5 @@
+import { generatedReviews } from "./generated-reviews";
+
 export type Table = { headers: string[]; rows: string[][] };
 
 export type ReviewRecord = {
@@ -8,14 +10,6 @@ export type ReviewRecord = {
   raw: string;
   tables: Table[];
 };
-
-type RawModuleMap = Record<string, string>;
-
-const rawModules = import.meta.glob("../../../reviews/**/*.md", {
-  eager: true,
-  import: "default",
-  query: "?raw",
-}) as RawModuleMap;
 
 function cell(value: string) {
   return value
@@ -59,7 +53,7 @@ function recordFromPath(path: string, raw: string): ReviewRecord {
   return { slug, kind: isWeekly ? "weekly" : "daily", title, dateLabel: date, raw, tables: parseTables(raw) };
 }
 
-export const reviews = Object.entries(rawModules)
+export const reviews = Object.entries(generatedReviews)
   .map(([path, raw]) => recordFromPath(path, raw))
   .sort((left, right) => right.slug.localeCompare(left.slug));
 
