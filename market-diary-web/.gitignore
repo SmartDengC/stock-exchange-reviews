@@ -13,8 +13,10 @@
 # testing
 /coverage
 
-# next.js
+# generated builds
 /.next/
+/.nuxt/
+/.output/
 /.vinext/
 /out/
 

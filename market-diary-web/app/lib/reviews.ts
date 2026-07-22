@@ -24,16 +24,16 @@ export function parseTables(markdown: string): Table[] {
   let index = 0;
 
   while (index < lines.length) {
-    if (!/^\s*\|/.test(lines[index]) || !/^\s*\|?\s*:?-{3,}/.test(lines[index + 1] ?? "")) {
+    if (!/^\s*\|/.test(lines[index] ?? "") || !/^\s*\|?\s*:?-{3,}/.test(lines[index + 1] ?? "")) {
       index += 1;
       continue;
     }
     const parseRow = (line: string) => line.trim().replace(/^\||\|$/g, "").split("|").map(cell);
-    const headers = parseRow(lines[index]);
+    const headers = parseRow(lines[index] ?? "");
     const rows: string[][] = [];
     index += 2;
-    while (index < lines.length && /^\s*\|/.test(lines[index])) {
-      rows.push(parseRow(lines[index]));
+    while (index < lines.length && /^\s*\|/.test(lines[index] ?? "")) {
+      rows.push(parseRow(lines[index] ?? ""));
       index += 1;
     }
     if (headers.length > 1 && rows.length) tables.push({ headers, rows });
