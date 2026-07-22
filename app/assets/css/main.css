@@ -318,6 +318,8 @@ footer span { font: 9px ui-monospace, monospace; letter-spacing: .08em; }
 .markdown-document blockquote { margin: 18px 0; padding: 13px 16px; border-left: 3px solid var(--primary); background: var(--surface-blue); color: var(--text); line-height: 1.75; }
 .markdown-document ul { margin: 0 0 18px; padding-left: 20px; line-height: 1.8; }
 .markdown-document code { padding: 2px 5px; border-radius: 4px; background: var(--primary-soft); color: var(--primary); font-size: .9em; }
+.markdown-document .markdown-link { color: var(--primary); font-weight: 600; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--primary) 40%, transparent); text-underline-offset: 3px; }
+.markdown-document .markdown-link:hover { text-decoration-color: currentColor; }
 .report-table-wrap { overflow-x: auto; margin: 19px 0 27px; border: 1px solid var(--border); border-radius: 7px; }
 .report-table { width: 100%; min-width: 580px; border-collapse: collapse; font-size: 11px; }
 .report-table th { padding: 10px 12px; background: var(--surface-soft); color: var(--muted); font-weight: 600; text-align: left; }

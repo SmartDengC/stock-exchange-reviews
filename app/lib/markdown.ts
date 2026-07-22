@@ -1,9 +1,8 @@
 import { parseTables, stripMarkdown, type Table } from "./reviews";
 
-export type InlineToken = {
-  kind: "text" | "strong" | "code";
-  text: string;
-};
+export type InlineToken =
+  | { kind: "text" | "strong" | "code"; text: string }
+  | { kind: "link"; text: string; href: string };
 
 export type MarkdownBlock =
   | { kind: "code"; content: string }
@@ -13,18 +12,30 @@ export type MarkdownBlock =
   | { kind: "list"; items: string[] }
   | { kind: "paragraph"; content: string };
 
+function parseTableRow(line: string) {
+  return line
+    .trim()
+    .replace(/^\||\|$/g, "")
+    .split("|")
+    .map((value) => stripMarkdown(value));
+}
+
 export function parseInline(text: string): InlineToken[] {
   return text
-    .split(/(\*\*.*?\*\*|`.*?`)/g)
+    .split(/(\*\*.*?\*\*|`.*?`|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g)
     .filter(Boolean)
-    .map((piece) => {
+    .map<InlineToken>((piece) => {
       if (piece.startsWith("**") && piece.endsWith("**")) {
-        return { kind: "strong" as const, text: piece.slice(2, -2) };
+        return { kind: "strong", text: piece.slice(2, -2) };
       }
       if (piece.startsWith("`") && piece.endsWith("`")) {
-        return { kind: "code" as const, text: piece.slice(1, -1) };
+        return { kind: "code", text: piece.slice(1, -1) };
       }
-      return { kind: "text" as const, text: piece };
+      const link = piece.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+      if (link) {
+        return { kind: "link", text: link[1] ?? link[2] ?? "", href: link[2] ?? "" };
+      }
+      return { kind: "text", text: piece };
     });
 }
 
@@ -58,6 +69,17 @@ export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
       continue;
     }
 
+    // Accept compact key/value rows such as `| 南向资金 | 净买入 75 亿 |`.
+    // They are not complete GFM tables, but occur in generated review files.
+    if (/^\s*\|/.test(line)) {
+      const rows: string[][] = [];
+      while (index < lines.length && /^\s*\|/.test(lines[index] ?? "")) {
+        rows.push(parseTableRow(lines[index++] ?? ""));
+      }
+      blocks.push({ kind: "table", table: { headers: [], rows } });
+      continue;
+    }
+
     const heading = line.match(/^(#{1,4})\s+(.+)$/);
     if (heading) {
       blocks.push({
@@ -69,7 +91,7 @@ export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
       continue;
     }
 
-    if (/^>\s?/.test(line)) {
+    if (/^\s*>\s?/.test(line)) {
       blocks.push({ kind: "quote", content: stripMarkdown(line) });
       index += 1;
       continue;
@@ -88,10 +110,12 @@ export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
     while (
       index < lines.length
       && (lines[index] ?? "").trim()
-      && !/^(#{1,4}\s|```|>\s?|\s*\||[-*]\s+)/.test(lines[index] ?? "")
+      && !/^(#{1,4}\s|```|\s*>\s?|\s*\||[-*]\s+)/.test(lines[index] ?? "")
     ) {
       paragraph.push(lines[index++] ?? "");
     }
+    // Unknown Markdown must still consume a line; otherwise this loop never advances.
+    if (!paragraph.length) paragraph.push(lines[index++] ?? "");
     blocks.push({ kind: "paragraph", content: stripMarkdown(paragraph.join(" ")) });
   }
 

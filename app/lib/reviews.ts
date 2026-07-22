@@ -47,7 +47,7 @@ function recordFromPath(path: string, raw: string): ReviewRecord | null {
   const isWeekly = Boolean(weeklyMatch);
   const slug = weeklyMatch?.[1] ?? dailyMatch?.[1];
   if (!slug) return null;
-  const title = raw.match(/^#\s+(.+)$/m)?.[1]?.replace(/^📊\s*/, "") ?? slug;
+  const title = raw.match(/^#{1,4}\s+(.+)$/m)?.[1]?.replace(/^📊\s*/, "") ?? slug;
   const date = raw.match(/\*\*时间范围：\*\*\s*([^\n]+)/)?.[1]
     ?? raw.match(/\*\*报告日期：\*\*\s*([^\n]+)/)?.[1]
     ?? title.match(/\d{4}年\d{1,2}月\d{1,2}日[^\n]*/)?.[0]

@@ -23,12 +23,14 @@ function cellTone(value: string, cellIndex: number) {
 
       <div v-else-if="block.kind === 'table'" class="report-table-wrap">
         <table class="report-table">
-          <thead>
+          <thead v-if="block.table.headers.length">
             <tr><th v-for="header in block.table.headers" :key="header">{{ header }}</th></tr>
           </thead>
           <tbody>
             <tr v-for="(row, rowIndex) in block.table.rows" :key="`${row[0]}-${rowIndex}`">
-              <td v-for="(value, cellIndex) in row" :key="cellIndex" :class="cellTone(value, cellIndex)">{{ value }}</td>
+              <td v-for="(value, cellIndex) in row" :key="cellIndex" :class="cellTone(value, cellIndex)">
+                <InlineText :text="value" />
+              </td>
             </tr>
           </tbody>
         </table>

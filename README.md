@@ -83,9 +83,11 @@ pnpm run lint      # 运行静态检查
 | --- | --- |
 | Framework Preset | `Nuxt.js` |
 | Root Directory | `.` |
-| Install Command | `pnpm install` |
-| Build Command | `pnpm run build` |
+| Install Command | `npm install --registry=https://registry.npmjs.org/` |
+| Build Command | `npm run build` |
 | Output Directory | `.output/public` |
 | Node.js Version | `22.x` |
+
+Vercel 通过根目录的 `vercel.json` 强制使用 npm；本地开发与测试仍使用 pnpm。
 
 构建前会自动把仓库根目录的 `reviews/` 同步至应用内数据模块，并预渲染全部报告页面。
