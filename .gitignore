@@ -1,2 +1,11 @@
-# Local dependencies for the web application
-market-diary-web/node_modules/
+# Local dependencies and generated output
+/node_modules/
+/.nuxt/
+/.output/
+/dist/
+/coverage/
+
+# Local and legacy build artifacts
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts

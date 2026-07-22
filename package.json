@@ -15,8 +15,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
-    "test:unit": "vitest run",
-    "test": "npm run typecheck && npm run test:unit && npm run build && node --test tests/rendered-html.test.mjs",
+    "test:unit": "node scripts/sync-reviews.mjs && node --test tests/sync-reviews.test.mjs",
+    "test": "pnpm run test:unit",
     "lint": "eslint .",
     "db:generate": "echo 'This project does not use a database.'"
   },

@@ -20,10 +20,9 @@
 ├── reviews/                         # 原始复盘资料
 │   ├── YYYY-MM-DD.md                # 日度复盘
 │   └── weekly/YYYY-Wxx.md           # 周度回顾
-└── market-diary-web/                # Web 终端
-    ├── app/                         # 页面与展示组件
-    ├── scripts/sync-reviews.mjs     # 将资料同步为构建时数据
-    └── package.json
+├── app/                             # 页面与展示组件
+├── scripts/sync-reviews.mjs         # 将资料同步为构建时数据
+└── package.json
 ```
 
 只有以下命名的资料会进入归档与生成路由：
@@ -38,7 +37,6 @@
 环境要求：Node.js `>= 22.13.0`，建议使用 pnpm。
 
 ```bash
-cd market-diary-web
 pnpm install
 pnpm run dev
 ```
@@ -57,7 +55,6 @@ pnpm install --registry=https://registry.npmjs.org/
 2. 重启开发服务器，或运行以下命令重新构建：
 
 ```bash
-cd market-diary-web
 pnpm run build
 ```
 
@@ -66,11 +63,9 @@ pnpm run build
 ## 常用命令
 
 ```bash
-cd market-diary-web
-
 pnpm run dev       # 启动本地开发服务器
 pnpm run build     # 生成生产构建
-pnpm test          # 构建并验证页面与资料索引
+pnpm test          # 同步并验证资料索引与路由
 pnpm run lint      # 运行静态检查
 ```
 
@@ -80,17 +75,17 @@ pnpm run lint      # 运行静态检查
 - `/report/weekly/YYYY-Wxx`：周报详情
 - `/report/daily/YYYY-MM-DD`：日报详情
 
-## Vercel 部署
+## 静态部署
 
-本项目已使用原生 Next.js 构建，会生成 Vercel 所需的 `.next/` 目录。导入仓库时使用以下设置：
+项目使用 Nuxt 静态生成，执行 `pnpm run build` 后部署 `.output/public/` 即可。
 
 | 设置项 | 值 |
 | --- | --- |
-| Framework Preset | `Next.js` |
-| Root Directory | `market-diary-web` |
-| Install Command | 留空（使用 `npm install`） |
-| Build Command | 留空（使用 `npm run build`） |
-| Output Directory | 留空（`Next.js default`） |
+| Framework Preset | `Nuxt.js` |
+| Root Directory | `.` |
+| Install Command | `pnpm install` |
+| Build Command | `pnpm run build` |
+| Output Directory | `.output/public` |
 | Node.js Version | `22.x` |
 
-不要将 Output Directory 设置为 `dist`。构建前会自动把仓库根目录的 `reviews/` 同步至应用内数据模块，因此 Vercel 可以读取并预渲染全部报告页面。
+构建前会自动把仓库根目录的 `reviews/` 同步至应用内数据模块，并预渲染全部报告页面。

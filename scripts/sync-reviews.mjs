@@ -4,8 +4,10 @@ import { fileURLToPath } from "node:url";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(scriptDirectory, "..");
-const reviewsRoot = join(projectRoot, "..", "reviews");
+const reviewsRoot = join(projectRoot, "reviews");
 const outputFile = join(projectRoot, "app", "lib", "generated-reviews.ts");
+const dailyReviewPattern = /^\d{4}-\d{2}-\d{2}\.md$/;
+const weeklyReviewPattern = /^weekly\/\d{4}-W\d{2}\.md$/;
 
 async function collectMarkdown(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -18,7 +20,12 @@ async function collectMarkdown(directory) {
   return files.flat();
 }
 
-const markdownFiles = (await collectMarkdown(reviewsRoot)).sort();
+const markdownFiles = (await collectMarkdown(reviewsRoot))
+  .filter((file) => {
+    const reviewPath = relative(reviewsRoot, file).replaceAll("\\", "/");
+    return dailyReviewPattern.test(reviewPath) || weeklyReviewPattern.test(reviewPath);
+  })
+  .sort();
 const entries = await Promise.all(markdownFiles.map(async (file) => {
   const source = await readFile(file, "utf8");
   const key = `reviews/${relative(reviewsRoot, file).replaceAll("\\", "/")}`;

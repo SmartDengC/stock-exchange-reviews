@@ -71,6 +71,10 @@ export function getReview(kind: ReviewRecord["kind"], slug: string) {
   return reviews.find((review) => review.kind === kind && review.slug === slug) ?? null;
 }
 
+export function reviewRoute(review: Pick<ReviewRecord, "kind" | "slug">) {
+  return `/report/${review.kind}/${review.slug}`;
+}
+
 export function section(markdown: string, heading: string) {
   const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const expression = new RegExp(`^#{2,4}\\s+.*${escaped}.*$([\\s\\S]*?)(?=^#{1,4}\\s+|(?![\\s\\S]))`, "mi");

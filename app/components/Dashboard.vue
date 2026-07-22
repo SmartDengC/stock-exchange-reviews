@@ -4,6 +4,7 @@ import {
   dailyReviews,
   findRow,
   firstTable,
+  reviewRoute,
   section,
   stripMarkdown,
   tableForHeading,
@@ -81,7 +82,7 @@ const driverCards = [
       </div>
       <div class="topbar-actions">
         <ThemeToggle />
-        <NuxtLink class="primary-link" :to="`/report/weekly/${review.slug}`">阅读完整周报 ↗</NuxtLink>
+        <NuxtLink class="primary-link" :to="reviewRoute(review)">阅读完整周报 ↗</NuxtLink>
       </div>
     </header>
 
@@ -104,14 +105,14 @@ const driverCards = [
           <NuxtLink
             v-for="item in weeklyReviews"
             :key="item.slug"
-            :to="`/report/weekly/${item.slug}`"
+            :to="reviewRoute(item)"
             :class="{ active: item.slug === review.slug }"
           >
             <span>{{ item.slug }}</span><b>{{ item.title.replace(/^\d{4}年第\d+周\s*/, "") }}</b>
           </NuxtLink>
 
           <p class="rail-label daily-label">日度复盘</p>
-          <NuxtLink v-for="item in dailyReviews" :key="item.slug" :to="`/report/daily/${item.slug}`">
+          <NuxtLink v-for="item in dailyReviews" :key="item.slug" :to="reviewRoute(item)">
             <span>{{ item.slug }}</span><b>{{ item.title.replace(/^\d{4}年/, "") }}</b>
           </NuxtLink>
         </div>
@@ -173,7 +174,7 @@ const driverCards = [
               <div><small>{{ card.tag }}</small><h3>{{ card.title }}</h3><p>{{ card.text }}</p></div>
             </article>
           </div>
-          <NuxtLink class="source-citation" :to="`/report/weekly/${review.slug}`">
+          <NuxtLink class="source-citation" :to="reviewRoute(review)">
             引用来源：{{ review.slug }}《本周核心驱动框架》 <span>阅读原文 ↗</span>
           </NuxtLink>
         </section>
@@ -213,7 +214,7 @@ const driverCards = [
           <p v-else class="empty-copy">暂无时间线数据</p>
         </section>
 
-        <NuxtLink class="insight-link" :to="`/report/weekly/${review.slug}`">查看全部研究记录 <span>→</span></NuxtLink>
+        <NuxtLink class="insight-link" :to="reviewRoute(review)">查看全部研究记录 <span>→</span></NuxtLink>
       </aside>
     </section>
 

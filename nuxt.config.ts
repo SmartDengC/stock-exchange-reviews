@@ -1,7 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
-import { reviews } from "./app/lib/reviews";
+import { reviewRoute, reviews } from "./app/lib/reviews";
 
-const reportRoutes = reviews.map((review) => `/report/${review.kind}/${review.slug}`);
+const reportRoutes = reviews.map(reviewRoute);
 
 export default defineNuxtConfig({
   compatibilityDate: "2026-07-22",
