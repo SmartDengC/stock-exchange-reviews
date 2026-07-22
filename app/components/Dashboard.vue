@@ -4,7 +4,6 @@ import {
   dailyReviews,
   findRow,
   firstTable,
-  reviewRoute,
   section,
   stripMarkdown,
   tableForHeading,
@@ -22,6 +21,11 @@ type Asset = {
 };
 
 const props = defineProps<{ review: ReviewRecord }>();
+const selectedReview = ref<ReviewRecord | null>(null);
+
+function openReview(review: ReviewRecord) {
+  selectedReview.value = review;
+}
 
 function assetFrom(table: ReturnType<typeof firstTable>, name: string, label: string, market: string): Asset {
   const row = findRow(table, name);
@@ -82,7 +86,7 @@ const driverCards = [
       </div>
       <div class="topbar-actions">
         <ThemeToggle />
-        <NuxtLink class="primary-link" :to="reviewRoute(review)">阅读完整周报 ↗</NuxtLink>
+        <button type="button" class="primary-link overlay-trigger" @click="openReview(review)">阅读完整周报 ↗</button>
       </div>
     </header>
 
@@ -102,19 +106,26 @@ const driverCards = [
 
         <div class="archive-list" id="archives">
           <p class="rail-label">周度回顾</p>
-          <NuxtLink
+          <button
             v-for="item in weeklyReviews"
             :key="item.slug"
-            :to="reviewRoute(item)"
-            :class="{ active: item.slug === review.slug }"
+            type="button"
+            :class="{ active: selectedReview ? selectedReview.kind === item.kind && selectedReview.slug === item.slug : item.slug === review.slug }"
+            @click="openReview(item)"
           >
             <span>{{ item.slug }}</span><b>{{ item.title.replace(/^\d{4}年第\d+周\s*/, "") }}</b>
-          </NuxtLink>
+          </button>
 
           <p class="rail-label daily-label">日度复盘</p>
-          <NuxtLink v-for="item in dailyReviews" :key="item.slug" :to="reviewRoute(item)">
+          <button
+            v-for="item in dailyReviews"
+            :key="item.slug"
+            type="button"
+            :class="{ active: selectedReview?.kind === item.kind && selectedReview.slug === item.slug }"
+            @click="openReview(item)"
+          >
             <span>{{ item.slug }}</span><b>{{ item.title.replace(/^\d{4}年/, "") }}</b>
-          </NuxtLink>
+          </button>
         </div>
       </aside>
 
@@ -174,9 +185,9 @@ const driverCards = [
               <div><small>{{ card.tag }}</small><h3>{{ card.title }}</h3><p>{{ card.text }}</p></div>
             </article>
           </div>
-          <NuxtLink class="source-citation" :to="reviewRoute(review)">
+          <button type="button" class="source-citation overlay-trigger" @click="openReview(review)">
             引用来源：{{ review.slug }}《本周核心驱动框架》 <span>阅读原文 ↗</span>
-          </NuxtLink>
+          </button>
         </section>
 
         <section id="outlook" class="panel outlook-panel">
@@ -214,10 +225,11 @@ const driverCards = [
           <p v-else class="empty-copy">暂无时间线数据</p>
         </section>
 
-        <NuxtLink class="insight-link" :to="reviewRoute(review)">查看全部研究记录 <span>→</span></NuxtLink>
+        <button type="button" class="insight-link overlay-trigger" @click="openReview(review)">查看全部研究记录 <span>→</span></button>
       </aside>
     </section>
 
     <footer>本系统仅用于个人研究与历史复盘，不构成任何投资建议。<span>MARKET DIARY · BUILD-TIME RESEARCH SYSTEM</span></footer>
+    <ReviewOverlay :review="selectedReview" @close="selectedReview = null" />
   </main>
 </template>
