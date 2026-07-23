@@ -104,7 +104,7 @@ const driverCards = [
           <a href="#outlook"><span>04</span>情景推演</a>
         </nav>
 
-        <div class="archive-list" id="archives">
+        <div id="archives" class="archive-list">
           <p class="rail-label">周度回顾</p>
           <button
             v-for="item in weeklyReviews"

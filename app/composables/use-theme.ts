@@ -1,3 +1,6 @@
+import { useState } from "#imports";
+import { onMounted, readonly } from "vue";
+
 export type Theme = "light" | "dark";
 
 const storageKey = "market-diary-theme";

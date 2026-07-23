@@ -2,8 +2,12 @@
 /node_modules/
 /.nuxt/
 /.output/
+/.vercel/
 /dist/
 /coverage/
+.env
+.env.*
+!.env.example
 
 # Local and legacy build artifacts
 .DS_Store

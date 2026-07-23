@@ -1,14 +1,23 @@
 import { fileURLToPath } from "node:url";
+import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  plugins: [vue()],
   resolve: {
-    alias: {
-      "~": fileURLToPath(new URL("./app", import.meta.url)),
-    },
+    alias: [
+      {
+        find: "#imports",
+        replacement: fileURLToPath(new URL("./tests/mocks/nuxt-imports.ts", import.meta.url)),
+      },
+      {
+        find: "~",
+        replacement: fileURLToPath(new URL("./app", import.meta.url)),
+      },
+    ],
   },
   test: {
-    environment: "node",
+    environment: "happy-dom",
     include: ["tests/**/*.spec.ts"],
   },
 });

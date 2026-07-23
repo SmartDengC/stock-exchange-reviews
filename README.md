@@ -8,10 +8,11 @@
 
 - 自动发现并展示日报、周报；首页默认呈现最新周报。
 - 覆盖 A 股、港股、黄金、原油、板块轮动、宏观事件及下周情景。
-- 提供日报与周报详情页，保留原始 Markdown 表格、段落和引用。
+- 使用 `md-editor-v3` 展示日报与周报，完整支持 Markdown 表格、段落、引用、列表和代码块。
+- 管理员可在预览与源码编辑之间切换，并将修改直接提交回 GitHub 中的原始 Markdown。
 - 深色 / 浅色主题切换；浅色主题采用暖纸张与网格背景。
 - 核心驱动框架以摘要卡片呈现，并链接回完整周报原文。
-- 无数据库、无登录、无手工录入后台；资料在启动和构建前自动同步。
+- 无数据库；资料在启动和构建前自动同步，写入由受保护的 Nitro API 和 GitHub Contents API 完成。
 
 ## 目录结构
 
@@ -20,7 +21,8 @@
 ├── reviews/                         # 原始复盘资料
 │   ├── YYYY-MM-DD.md                # 日度复盘
 │   └── weekly/YYYY-Wxx.md           # 周度回顾
-├── app/                             # 页面与展示组件
+├── app/                             # 页面、预览与编辑组件
+├── server/api/                      # 登录与 GitHub 读写接口
 ├── scripts/sync-reviews.mjs         # 将资料同步为构建时数据
 └── package.json
 ```
@@ -49,10 +51,31 @@ pnpm install --registry=https://registry.npmjs.org/
 
 启动成功后，打开终端输出的本地地址（通常为 `http://localhost:3000`）。
 
+## 配置在线编辑
+
+复制 `.env.example` 为本地 `.env`，并在 Vercel Project Settings → Environment Variables 中配置相同变量：
+
+```bash
+pnpm run auth:hash
+```
+
+将输出保存为 `NUXT_ADMIN_PASSWORD_HASH`。此外需要：
+
+- `NUXT_SESSION_PASSWORD`：至少 32 个字符，用于加密管理员会话。
+- `NUXT_GITHUB_TOKEN`：新建 fine-grained token，仅授权当前仓库，并将 Repository permissions → Contents 设置为 `Read and write`。只有 `admin:org` 等组织权限的 classic token 无法保存文件。
+- `NUXT_GITHUB_OWNER`、`NUXT_GITHUB_REPO`、`NUXT_GITHUB_BRANCH`：默认分别为 `SmartDengC`、`stock-exchange-reviews`、`main`。
+
+所有密钥只在服务端读取，不会发送到浏览器或提交进仓库。
+
 ## 更新资料
 
-1. 在 `reviews/` 按约定新增或修改 Markdown 文件。
-2. 重启开发服务器，或运行以下命令重新构建：
+可以在 `reviews/` 中直接修改文件，也可以在网页中以管理员身份登录，打开任意复盘后点击“编辑 Markdown”。网页保存会：
+
+1. 使用当前 GitHub 文件 SHA 检查版本，避免覆盖其他提交。
+2. 将新内容提交到 `main` 分支。
+3. 立即刷新当前预览，并等待 Vercel 自动部署后同步首页指标。
+
+手工修改文件后，重启开发服务器或重新构建：
 
 ```bash
 pnpm run build
@@ -64,9 +87,10 @@ pnpm run build
 
 ```bash
 pnpm run dev       # 启动本地开发服务器
-pnpm run build     # 生成生产构建
+pnpm run build     # 生成 Nuxt 混合生产构建
 pnpm test          # 同步并验证资料索引与路由
 pnpm run lint      # 运行静态检查
+pnpm run auth:hash # 生成管理员密码哈希
 ```
 
 ## 路由
@@ -75,9 +99,9 @@ pnpm run lint      # 运行静态检查
 - `/report/weekly/YYYY-Wxx`：周报详情
 - `/report/daily/YYYY-MM-DD`：日报详情
 
-## 静态部署
+## Vercel 部署
 
-项目使用 Nuxt 静态生成，执行 `pnpm run build` 后部署 `.output/public/` 即可。
+项目使用 Nuxt 混合部署：公开页面在构建时预渲染，登录和 Markdown 保存接口作为 Vercel Functions 运行。
 
 | 设置项 | 值 |
 | --- | --- |
@@ -85,9 +109,9 @@ pnpm run lint      # 运行静态检查
 | Root Directory | `.` |
 | Install Command | `npm install --registry=https://registry.npmjs.org/` |
 | Build Command | `npm run build` |
-| Output Directory | `.output/public` |
+| Output Directory | 留空，由 Nuxt / Vercel 自动识别 |
 | Node.js Version | `22.x` |
 
 Vercel 通过根目录的 `vercel.json` 强制使用 npm；本地开发与测试仍使用 pnpm。
 
-构建前会自动把仓库根目录的 `reviews/` 同步至应用内数据模块，并预渲染全部报告页面。
+构建前会自动把仓库根目录的 `reviews/` 同步至应用内数据模块，并预渲染全部报告页面。网页保存到 `main` 后，GitHub 集成会触发新的 Vercel 部署。

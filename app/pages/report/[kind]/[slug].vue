@@ -31,7 +31,7 @@ useSeoMeta({
         <h1>{{ record.title }}</h1>
         <p>{{ record.dateLabel }}</p>
       </section>
-      <MarkdownDocument :markdown="record.raw" />
+      <ReviewDocumentEditor :review="record" />
     </article>
 
     <footer>本系统仅用于个人研究与历史复盘，不构成任何投资建议。<span>市场日记 · BUILD-TIME RESEARCH SYSTEM</span></footer>

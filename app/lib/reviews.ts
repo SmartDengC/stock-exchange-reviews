@@ -14,7 +14,7 @@ export type ReviewRecord = {
 function cell(value: string) {
   return value
     .replace(/[*_`]/g, "")
-    .replace(/[🟢🔴💀☠️🚀🔥🛢️🛡️📉📈🔄]/gu, "")
+    .replace(/(?:🟢|🔴|💀|☠️|🚀|🔥|🛢️|🛡️|📉|📈|🔄)/gu, "")
     .trim();
 }
 

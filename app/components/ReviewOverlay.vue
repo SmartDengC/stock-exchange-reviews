@@ -5,11 +5,13 @@ const props = defineProps<{ review: ReviewRecord | null }>();
 const emit = defineEmits<{ close: [] }>();
 
 const closeButton = ref<HTMLButtonElement | null>(null);
+const documentEditor = ref<{ confirmDiscard: () => boolean } | null>(null);
 let bodyOverflow = "";
 let returnFocus: HTMLElement | null = null;
 let scrollLocked = false;
 
 function close() {
+  if (documentEditor.value && !documentEditor.value.confirmDiscard()) return;
   emit("close");
 }
 
@@ -76,7 +78,7 @@ onBeforeUnmount(() => {
           </header>
 
           <div class="review-overlay-body">
-            <MarkdownDocument :markdown="review.raw" />
+            <ReviewDocumentEditor ref="documentEditor" :review="review" />
           </div>
         </section>
       </div>
