@@ -1,5 +1,6 @@
 import tailwindcss from "@tailwindcss/vite";
 import { reviewRoute, reviews } from "./app/lib/reviews";
+import { ADMIN_SESSION_MAX_AGE_SECONDS } from "./shared/auth-session";
 
 const reportRoutes = reviews.map(reviewRoute);
 
@@ -29,6 +30,9 @@ export default defineNuxtConfig({
     "/report/**": { prerender: true },
   },
   runtimeConfig: {
+    session: {
+      maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
+    },
     adminPasswordHash: "",
     githubToken: "",
     githubOwner: "SmartDengC",

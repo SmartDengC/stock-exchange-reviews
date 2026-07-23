@@ -3,6 +3,11 @@ declare module "#auth-utils" {
     name: string;
     role: "admin";
   }
+
+  interface UserSession {
+    expiresAt: string;
+    loggedInAt: string;
+  }
 }
 
 export {};

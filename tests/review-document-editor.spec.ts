@@ -1,9 +1,13 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import { defineComponent, h } from "vue";
+import { defineComponent, h, nextTick } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ReviewDocumentEditor from "~/components/ReviewDocumentEditor.vue";
 import type { ReviewRecord } from "~/lib/reviews";
-import { resetTestState, testSession as session } from "./mocks/nuxt-imports";
+import {
+  resetTestState,
+  testSession as session,
+  useState,
+} from "./mocks/nuxt-imports";
 
 vi.mock("vue-router", async (importOriginal) => ({
   ...await importOriginal<typeof import("vue-router")>(),
@@ -41,6 +45,7 @@ describe("ReviewDocumentEditor", () => {
     resetTestState();
     session.ready.value = true;
     session.loggedIn.value = false;
+    session.session.value = null;
     session.fetch = vi.fn();
     session.clear = vi.fn();
     vi.unstubAllGlobals();
@@ -140,5 +145,58 @@ describe("ReviewDocumentEditor", () => {
 
     expect(wrapper.text()).toContain("GitHub Token 没有 Contents 写权限");
     expect(wrapper.text()).not.toContain("Server Error");
+  });
+
+  it("keeps an unsaved draft but disables saving after the session times out", async () => {
+    session.loggedIn.value = true;
+    session.session.value = {
+      loggedInAt: "2026-07-23T08:00:00.000Z",
+      expiresAt: "2026-07-23T08:05:00.000Z",
+    };
+    const request = vi.fn().mockResolvedValue({
+      content: "# GitHub 最新复盘",
+      path: "reviews/2026-07-23.md",
+      sha: "latest-sha",
+    });
+    vi.stubGlobal("$fetch", request);
+
+    const wrapper = mount(ReviewDocumentEditor, {
+      props: { review },
+      global: {
+        stubs: {
+          AInputPassword: true,
+          AModal: true,
+          MarkdownDocument: {
+            props: ["markdown"],
+            template: "<div class=\"markdown-stub\">{{ markdown }}</div>",
+          },
+        },
+      },
+    });
+
+    await wrapper.findAll("button")
+      .find((button) => button.text().includes("编辑 Markdown"))!
+      .trigger("click");
+    await flushPromises();
+    await wrapper.get("textarea").setValue("# 未保存草稿");
+
+    session.loggedIn.value = false;
+    useState("admin-session-timed-out", () => false).value = true;
+    await nextTick();
+
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value)
+      .toBe("# 未保存草稿");
+    expect(wrapper.text()).toContain("登录已超时，未保存草稿已保留");
+    expect(wrapper.text()).toContain("重新登录");
+    const saveButton = wrapper.findAll("button")
+      .find((button) => button.text().includes("保存到 GitHub"));
+    expect(saveButton?.attributes("disabled")).toBeDefined();
+
+    session.loggedIn.value = true;
+    useState("admin-session-timed-out", () => false).value = false;
+    await nextTick();
+    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value)
+      .toBe("# 未保存草稿");
+    expect(saveButton?.attributes("disabled")).toBeUndefined();
   });
 });

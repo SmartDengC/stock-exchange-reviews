@@ -2,6 +2,7 @@ import { getRouterParams, readBody } from "h3";
 import {
   assertSameOrigin,
   getRepositoryConfig,
+  requireActiveAdminSession,
   throwReviewApiError,
 } from "../../../utils/review-api";
 import {
@@ -12,7 +13,7 @@ import {
 
 export default defineEventHandler(async (event) => {
   assertSameOrigin(event);
-  await requireUserSession(event, { message: "请先登录管理员账户" });
+  await requireActiveAdminSession(event);
   const { kind = "", slug = "" } = getRouterParams(event);
   const body = await readBody<{ content?: unknown; sha?: unknown }>(event);
 

@@ -9,6 +9,7 @@ import {
   watch,
 } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
+import { useAdminSessionTimeout } from "~/composables/use-admin-session-timeout";
 import { useTheme } from "~/composables/use-theme";
 import type { ReviewRecord } from "~/lib/reviews";
 import { sanitizeMarkdownHtml } from "~/lib/markdown-sanitize";
@@ -26,6 +27,7 @@ type Status = {
 
 const props = defineProps<{ review: ReviewRecord }>();
 const { theme } = useTheme();
+const timedOut = useAdminSessionTimeout();
 const {
   ready: sessionReady,
   loggedIn,
@@ -86,6 +88,30 @@ function errorMessage(error: unknown) {
   return "操作失败，请稍后重试";
 }
 
+function errorStatusCode(error: unknown) {
+  if (!error || typeof error !== "object") return null;
+  if ("statusCode" in error && typeof error.statusCode === "number") {
+    return error.statusCode;
+  }
+  const payload = "data" in error ? error.data : null;
+  if (
+    payload
+    && typeof payload === "object"
+    && "statusCode" in payload
+    && typeof payload.statusCode === "number"
+  ) {
+    return payload.statusCode;
+  }
+  return null;
+}
+
+async function handleExpiredSession(error: unknown) {
+  if (errorStatusCode(error) !== 401) return false;
+  timedOut.value = true;
+  await refreshSession().catch(() => undefined);
+  return true;
+}
+
 function confirmDiscard() {
   if (!dirty.value || !import.meta.client) return true;
   return window.confirm("当前修改尚未保存，确定要放弃吗？");
@@ -101,9 +127,15 @@ async function login() {
       body: { password: password.value },
     });
     await refreshSession();
+    timedOut.value = false;
     password.value = "";
     loginVisible.value = false;
-    status.value = { kind: "success", message: "管理员已登录，可以开始编辑。" };
+    status.value = {
+      kind: "success",
+      message: editing.value
+        ? "已重新登录，未保存草稿仍保留，可以继续保存。"
+        : "管理员已登录，可以开始编辑。",
+    };
   } catch (error) {
     status.value = { kind: "error", message: errorMessage(error) };
   } finally {
@@ -114,6 +146,7 @@ async function login() {
 async function logout() {
   if (!confirmDiscard()) return;
   editing.value = false;
+  timedOut.value = false;
   status.value = null;
   await $fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
   await refreshSession();
@@ -134,6 +167,7 @@ async function startEditing() {
     mode.value = "edit";
     editing.value = true;
   } catch (error) {
+    await handleExpiredSession(error);
     status.value = { kind: "error", message: errorMessage(error) };
   } finally {
     loadingSource.value = false;
@@ -171,6 +205,7 @@ async function save() {
       url: result.commitUrl,
     };
   } catch (error) {
+    await handleExpiredSession(error);
     status.value = { kind: "error", message: errorMessage(error) };
   } finally {
     saving.value = false;
@@ -188,6 +223,16 @@ watch(reviewKey, () => {
   mode.value = "edit";
   status.value = null;
 });
+
+watch(timedOut, (expired) => {
+  if (!expired) return;
+  status.value = {
+    kind: "error",
+    message: editing.value
+      ? "登录已超时，未保存草稿已保留，请重新登录后继续。"
+      : "管理员登录已超时，请重新登录。",
+  };
+}, { immediate: true });
 
 onMounted(() => window.addEventListener("beforeunload", onBeforeUnload));
 onBeforeUnmount(() => window.removeEventListener("beforeunload", onBeforeUnload));
@@ -237,9 +282,17 @@ defineExpose({ confirmDiscard });
             取消
           </button>
           <button
+            v-if="sessionReady && !loggedIn"
             type="button"
             class="editor-button primary"
-            :disabled="!dirty || saving"
+            @click="loginVisible = true"
+          >
+            重新登录
+          </button>
+          <button
+            type="button"
+            class="editor-button primary"
+            :disabled="!dirty || saving || !loggedIn"
             @click="save"
           >
             {{ saving ? "保存中…" : "保存到 GitHub" }}

@@ -1,5 +1,6 @@
 import type { H3Event } from "h3";
 import { createError, getRequestHeader, getRequestURL } from "h3";
+import { isAdminSessionExpired } from "../../shared/auth-session";
 import {
   GitHubApiError,
   ReviewValidationError,
@@ -29,6 +30,19 @@ export function getRepositoryConfig(event: H3Event): GitHubRepositoryConfig {
     });
   }
   return repository;
+}
+
+export async function requireActiveAdminSession(event: H3Event) {
+  const session = await requireUserSession(event, {
+    message: "请先登录管理员账户",
+  });
+  if (!isAdminSessionExpired(session)) return session;
+
+  await clearUserSession(event);
+  throw createError({
+    statusCode: 401,
+    message: "登录已超时，请重新登录",
+  });
 }
 
 export function throwReviewApiError(error: unknown): never {

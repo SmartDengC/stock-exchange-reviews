@@ -1,9 +1,13 @@
 import { getRouterParams } from "h3";
-import { getRepositoryConfig, throwReviewApiError } from "../../../utils/review-api";
+import {
+  getRepositoryConfig,
+  requireActiveAdminSession,
+  throwReviewApiError,
+} from "../../../utils/review-api";
 import { readGitHubReview, resolveReviewPath } from "../../../utils/review-storage";
 
 export default defineEventHandler(async (event) => {
-  await requireUserSession(event, { message: "请先登录管理员账户" });
+  await requireActiveAdminSession(event);
   const { kind = "", slug = "" } = getRouterParams(event);
 
   try {
