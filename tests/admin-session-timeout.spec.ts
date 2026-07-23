@@ -20,7 +20,7 @@ describe("admin session timeout", () => {
     );
   });
 
-  it("expires exactly five minutes after login", () => {
+  it("expires exactly thirty minutes after the last server refresh", () => {
     const loggedInAt = "2026-07-23T08:00:00.000Z";
     const deadline = Date.parse(loggedInAt) + ADMIN_SESSION_MAX_AGE_MS;
 

@@ -1,4 +1,4 @@
-export const ADMIN_SESSION_MAX_AGE_SECONDS = 5 * 60;
+export const ADMIN_SESSION_MAX_AGE_SECONDS = 30 * 60;
 export const ADMIN_SESSION_MAX_AGE_MS = ADMIN_SESSION_MAX_AGE_SECONDS * 1000;
 
 export type AdminSessionTimestamps = {

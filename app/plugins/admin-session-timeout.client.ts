@@ -11,6 +11,8 @@ export default defineNuxtPlugin((nuxtApp) => {
     session,
   } = useUserSession();
   const timedOut = useAdminSessionTimeout();
+  let lastInteractionAt = Date.now();
+  let refreshing = false;
 
   const timer = createAdminSessionTimer({
     getDeadline: () => loggedIn.value
@@ -44,13 +46,43 @@ export default defineNuxtPlugin((nuxtApp) => {
     if (document.visibilityState === "visible") timer.sync();
   }
 
+  function recordInteraction() {
+    lastInteractionAt = Date.now();
+  }
+
+  const heartbeat = window.setInterval(async () => {
+    if (
+      refreshing
+      || !loggedIn.value
+      || document.visibilityState !== "visible"
+      || Date.now() - lastInteractionAt > 5 * 60_000
+    ) return;
+    refreshing = true;
+    try {
+      await $fetch("/api/auth/refresh", { method: "POST" });
+      await refreshSession();
+      timer.sync();
+    } catch {
+      timer.sync();
+    } finally {
+      refreshing = false;
+    }
+  }, 5 * 60_000);
+
   document.addEventListener("visibilitychange", checkSessionDeadline);
   window.addEventListener("focus", checkSessionDeadline);
+  for (const event of ["pointerdown", "keydown", "input", "touchstart"]) {
+    window.addEventListener(event, recordInteraction, { passive: true });
+  }
 
   nuxtApp.vueApp.onUnmount(() => {
     stopSessionWatch();
     timer.dispose();
+    window.clearInterval(heartbeat);
     document.removeEventListener("visibilitychange", checkSessionDeadline);
     window.removeEventListener("focus", checkSessionDeadline);
+    for (const event of ["pointerdown", "keydown", "input", "touchstart"]) {
+      window.removeEventListener(event, recordInteraction);
+    }
   });
 });

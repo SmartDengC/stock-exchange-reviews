@@ -86,6 +86,7 @@ const driverCards = [
       </div>
       <div class="topbar-actions">
         <ThemeToggle />
+        <NuxtLink class="secondary-link" to="/trading">交易复盘 🔒</NuxtLink>
         <button type="button" class="primary-link overlay-trigger" @click="openReview(review)">阅读完整周报 ↗</button>
       </div>
     </header>

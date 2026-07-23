@@ -6,6 +6,7 @@ declare module "#auth-utils" {
 
   interface UserSession {
     expiresAt: string;
+    lastActivityAt: string;
     loggedInAt: string;
   }
 }
