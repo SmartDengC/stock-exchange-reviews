@@ -21,16 +21,18 @@ export default defineEventHandler(async (event) => {
   }
 
   const loggedInAt = new Date();
+  const expiresAt = new Date(
+    loggedInAt.getTime() + ADMIN_SESSION_MAX_AGE_SECONDS * 1000,
+  );
   await setUserSession(
     event,
     {
       user: { name: "管理员", role: "admin" },
       loggedInAt: loggedInAt.toISOString(),
-      expiresAt: new Date(
-        loggedInAt.getTime() + ADMIN_SESSION_MAX_AGE_SECONDS * 1000,
-      ).toISOString(),
+      lastActivityAt: loggedInAt.toISOString(),
+      expiresAt: expiresAt.toISOString(),
     },
     { maxAge: ADMIN_SESSION_MAX_AGE_SECONDS },
   );
-  return { loggedIn: true };
+  return { loggedIn: true, expiresAt: expiresAt.toISOString() };
 });

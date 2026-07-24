@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     "@arco-design/web-vue/dist/arco.css",
     "md-editor-v3/lib/style.css",
     "~/assets/css/main.css",
+    "~/assets/css/trading.css",
   ],
   vite: {
     plugins: [tailwindcss()],
@@ -28,6 +29,8 @@ export default defineNuxtConfig({
   routeRules: {
     "/": { prerender: true },
     "/report/**": { prerender: true },
+    "/trading/**": { ssr: true, prerender: false, headers: { "cache-control": "private, no-store" } },
+    "/api/trading/**": { headers: { "cache-control": "private, no-store" } },
   },
   runtimeConfig: {
     session: {
@@ -38,6 +41,8 @@ export default defineNuxtConfig({
     githubOwner: "SmartDengC",
     githubRepo: "stock-exchange-reviews",
     githubBranch: "main",
+    databaseUrl: "",
+    blobReadWriteToken: "",
   },
   app: {
     head: {
@@ -46,6 +51,10 @@ export default defineNuxtConfig({
       meta: [
         { name: "description", content: "个人市场复盘与周度研究终端" },
         { name: "color-scheme", content: "light dark" },
+        { property: "og:title", content: "市场日记 · 研究终端" },
+        { property: "og:description", content: "个人市场研究、日报周报与私有交易复盘终端" },
+        { property: "og:image", content: "/og.png" },
+        { name: "twitter:card", content: "summary_large_image" },
       ],
       link: [
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
