@@ -13,7 +13,19 @@ describe("Markdown HTML sanitizing", () => {
     expect(output).not.toContain("onerror");
     expect(output).not.toContain("onclick");
     expect(output).not.toContain("javascript:");
+    expect(output).toContain('target="_blank"');
     expect(output).toContain("noopener noreferrer");
+  });
+
+  it("opens every review link in a new tab", () => {
+    const output = sanitizeMarkdownHtml(`
+      <a href="https://example.com/research">外部链接</a>
+      <a href="/reviews/2026-07-24" target="_self">站内链接</a>
+    `);
+
+    expect(output.match(/target="_blank"/g)).toHaveLength(2);
+    expect(output).not.toContain('target="_self"');
+    expect(output.match(/rel="noopener noreferrer"/g)).toHaveLength(2);
   });
 
   it("keeps the tags required by market review documents", () => {

@@ -420,6 +420,7 @@ footer span { font: 9px ui-monospace, monospace; letter-spacing: .08em; }
 .markdown-document code:not(pre code) { padding: 2px 5px; border-radius: 4px; background: var(--primary-soft); color: var(--primary); font-size: .9em; }
 .markdown-document a { color: var(--primary); font-weight: 600; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--primary) 40%, transparent); text-underline-offset: 3px; }
 .markdown-document a:hover { text-decoration-color: currentColor; }
+.markdown-document .default-theme a[target="_blank"]::after { display: none; content: none; }
 .markdown-document table { display: table; width: 100%; min-width: 580px; margin: 19px 0 27px; overflow: hidden; border: 1px solid var(--border); border-collapse: separate; border-spacing: 0; border-radius: 7px; font-size: 11px; }
 .markdown-document table th { padding: 10px 12px; border: 0; background: var(--surface-soft); color: var(--muted); font-weight: 600; text-align: left; }
 .markdown-document table td { padding: 10px 12px; border: 0; border-top: 1px solid var(--border); background: transparent; }

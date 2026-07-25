@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: "~~",
+        replacement: fileURLToPath(new URL(".", import.meta.url)),
+      },
+      {
         find: "#imports",
         replacement: fileURLToPath(new URL("./tests/mocks/nuxt-imports.ts", import.meta.url)),
       },

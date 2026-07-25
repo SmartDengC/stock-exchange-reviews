@@ -22,6 +22,7 @@ export function sanitizeMarkdownHtml(html: string) {
     allowProtocolRelative: false,
     transformTags: {
       a: sanitizeHtml.simpleTransform("a", {
+        target: "_blank",
         rel: "noopener noreferrer",
       }),
     },

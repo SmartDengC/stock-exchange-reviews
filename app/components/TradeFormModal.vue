@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { upload } from "@vercel/blob/client";
+import { computed, reactive, ref, watch } from "vue";
 import { calculateTrade } from "~~/shared/trading-calculator";
 import type {
   TradeInput,
@@ -225,7 +226,7 @@ async function save() {
 <template>
   <Teleport to="body">
     <Transition name="review-overlay">
-      <div v-if="open" class="trade-modal-backdrop" @click.self="emit('close')">
+      <div v-if="open" class="trade-modal-backdrop">
         <section class="trade-form-modal" role="dialog" aria-modal="true" aria-labelledby="trade-form-title">
           <header class="trade-modal-header">
             <div>
