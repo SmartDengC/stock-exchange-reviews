@@ -38,7 +38,7 @@ watch(data, (value) => {
     exitedAsPlanned: value.exitedAsPlanned,
     priorityFix: value.priorityFix,
     notes: value.notes,
-    updatedAt: value.id ? value.updatedAt : undefined,
+    version: value.id ? value.version : undefined,
   });
 }, { immediate: true });
 

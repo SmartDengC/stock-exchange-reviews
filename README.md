@@ -46,8 +46,10 @@
 
 ```bash
 pnpm install
-pnpm run dev
+pnpm exec dotenv --no-expand -e .env -e .env.local -- pnpm run dev
 ```
+
+开发服务器通过 `dotenv-cli` 同时读取 `.env` 和 `.env.local`，并使用 `--no-expand` 防止密码、令牌等值中的 `$` 被变量展开。多个环境文件按命令中的顺序处理：已有进程环境变量优先，其次是 `.env`，`.env.local` 仅补充尚未定义的变量。
 
 若本机 npm 镜像不可用，可改用官方源安装：
 
@@ -123,7 +125,7 @@ pnpm run build
 ## 常用命令
 
 ```bash
-pnpm run dev       # 启动本地开发服务器
+pnpm exec dotenv --no-expand -e .env -e .env.local -- pnpm run dev # 加载本地环境变量并启动开发服务器
 pnpm run build     # 生成 Nuxt 混合生产构建
 pnpm test          # 同步并验证资料索引与路由
 pnpm run lint      # 运行静态检查

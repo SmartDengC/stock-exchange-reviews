@@ -11,6 +11,7 @@ import {
   isNull,
   lte,
   or,
+  sql,
 } from "drizzle-orm";
 import {
   dailyReviews,
@@ -80,6 +81,7 @@ function baseTrade(row: TradeRow): Omit<TradeView, "attachments" | "errorTags"> 
     rMultiple: decimal(row.rMultiple),
     holdMinutes: row.holdMinutes,
     isWinning: row.isWinning,
+    version: row.version,
     createdAt: iso(row.createdAt)!,
     updatedAt: iso(row.updatedAt)!,
     deletedAt: iso(row.deletedAt),
@@ -248,31 +250,45 @@ export async function createTrade(event: H3Event, input: TradeInput) {
 }
 
 export async function updateTrade(event: H3Event, id: string, input: TradeInput) {
-  if (!input.updatedAt) throw createError({ statusCode: 400, message: "缺少版本时间，请重新加载" });
+  if (input.version === undefined) throw createError({ statusCode: 400, message: "缺少版本号，请重新加载" });
   const db = getTradingDb(event);
   const current = await getTrade(event, id);
   if (!current) throw createError({ statusCode: 404, message: "未找到交易记录" });
-  if (current.updatedAt !== new Date(input.updatedAt).toISOString()) {
+  if (current.version !== input.version) {
     throw createError({ statusCode: 409, message: "记录已在其他页面更新，请重新加载" });
   }
   const [row] = await db.update(trades)
-    .set({ ...tradeValues(input), updatedAt: new Date() })
-    .where(and(eq(trades.id, id), eq(trades.updatedAt, new Date(input.updatedAt))))
-    .returning();
+    .set({
+      ...tradeValues(input),
+      version: sql`${trades.version} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(trades.id, id), eq(trades.version, input.version), isNull(trades.deletedAt)))
+    .returning({ id: trades.id });
   if (!row) throw createError({ statusCode: 409, message: "记录已在其他页面更新，请重新加载" });
   await syncErrorTags(event, id, input.errorTags ?? []);
   return (await getTrade(event, id))!;
 }
 
-export async function softDeleteTrade(event: H3Event, id: string, updatedAt?: string) {
+export async function softDeleteTrade(event: H3Event, id: string, version?: number) {
+  if (version === undefined || !Number.isSafeInteger(version) || version <= 0) {
+    throw createError({ statusCode: 400, message: "缺少或无效的版本号，请重新加载" });
+  }
   const db = getTradingDb(event);
-  const conditions = [eq(trades.id, id), isNull(trades.deletedAt)];
-  if (updatedAt) conditions.push(eq(trades.updatedAt, new Date(updatedAt)));
+  const current = await getTrade(event, id);
+  if (!current) throw createError({ statusCode: 404, message: "未找到交易记录" });
+  if (current.version !== version) {
+    throw createError({ statusCode: 409, message: "记录已在其他页面更新，请重新加载" });
+  }
   const [row] = await db.update(trades)
-    .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(and(...conditions))
+    .set({
+      deletedAt: new Date(),
+      version: sql`${trades.version} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(trades.id, id), eq(trades.version, version), isNull(trades.deletedAt)))
     .returning({ id: trades.id });
-  if (!row) throw createError({ statusCode: 409, message: "记录不存在或已经变化，请重新加载" });
+  if (!row) throw createError({ statusCode: 409, message: "记录已在其他页面更新，请重新加载" });
   return { deleted: true, id };
 }
 
@@ -386,6 +402,7 @@ export async function getDailyReview(event: H3Event, reviewDate: string): Promis
       && closedDayTrades.every((trade) => trade.attachments.length > 0),
     metrics: aggregateMetrics(dayTrades),
     trades: dayTrades,
+    version: review?.version ?? 0,
     createdAt: iso(review?.createdAt ?? new Date())!,
     updatedAt: iso(review?.updatedAt ?? new Date())!,
   };
@@ -396,10 +413,10 @@ export async function saveDailyReview(event: H3Event, input: DailyReviewInput) {
   const [existing] = await db.select().from(dailyReviews)
     .where(eq(dailyReviews.reviewDate, input.reviewDate))
     .limit(1);
-  if (existing && !input.updatedAt) {
-    throw createError({ statusCode: 400, message: "缺少版本时间，请重新加载日复盘" });
+  if (existing && input.version === undefined) {
+    throw createError({ statusCode: 400, message: "缺少版本号，请重新加载日复盘" });
   }
-  if (existing && iso(existing.updatedAt) !== new Date(input.updatedAt!).toISOString()) {
+  if (existing && existing.version !== input.version) {
     throw createError({ statusCode: 409, message: "日复盘已在其他页面更新，请重新加载" });
   }
   const values = {
@@ -419,8 +436,15 @@ export async function saveDailyReview(event: H3Event, input: DailyReviewInput) {
     updatedAt: new Date(),
   };
   if (existing) {
-    const [updated] = await db.update(dailyReviews).set(values)
-      .where(and(eq(dailyReviews.id, existing.id), eq(dailyReviews.updatedAt, new Date(input.updatedAt!))))
+    const [updated] = await db.update(dailyReviews).set({
+      ...values,
+      version: sql`${dailyReviews.version} + 1`,
+    })
+      .where(and(
+        eq(dailyReviews.id, existing.id),
+        eq(dailyReviews.version, input.version!),
+        isNull(dailyReviews.deletedAt),
+      ))
       .returning({ id: dailyReviews.id });
     if (!updated) throw createError({ statusCode: 409, message: "日复盘已在其他页面更新，请重新加载" });
   } else {
@@ -488,16 +512,27 @@ export async function insertAttachment(
   },
 ) {
   const db = getTradingDb(event);
-  const existing = await db.select({ count: tradeAttachments.id }).from(tradeAttachments)
+  const existing = await db.select().from(tradeAttachments)
     .where(eq(tradeAttachments.tradeId, input.tradeId));
+  const duplicate = existing.find((attachment) => attachment.pathname === input.pathname);
+  if (duplicate) return attachmentView(duplicate);
   if (existing.length >= 10) throw createError({ statusCode: 400, message: "每笔交易最多上传 10 张截图" });
-  await db.insert(tradeAttachments).values({
+  const [row] = await db.insert(tradeAttachments).values({
     ...input,
     width: input.width ?? null,
     height: input.height ?? null,
     sortOrder: existing.length,
     isCover: existing.length === 0,
-  }).onConflictDoNothing();
+  }).onConflictDoNothing().returning();
+  if (row) return attachmentView(row);
+  const [concurrentDuplicate] = await db.select().from(tradeAttachments)
+    .where(and(
+      eq(tradeAttachments.tradeId, input.tradeId),
+      eq(tradeAttachments.pathname, input.pathname),
+    ))
+    .limit(1);
+  if (!concurrentDuplicate) throw createError({ statusCode: 409, message: "截图记录写入失败" });
+  return attachmentView(concurrentDuplicate);
 }
 
 export async function getAttachment(event: H3Event, id: string) {

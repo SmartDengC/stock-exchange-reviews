@@ -7,5 +7,6 @@ export default defineEventHandler(async (event) => {
   await requireActiveAdminSession(event);
   const id = getRouterParam(event, "id") ?? "";
   const query = getQuery(event);
-  return softDeleteTrade(event, id, typeof query.updatedAt === "string" ? query.updatedAt : undefined);
+  const version = typeof query.version === "string" ? Number(query.version) : undefined;
+  return softDeleteTrade(event, id, version);
 });

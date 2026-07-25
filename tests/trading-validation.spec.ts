@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { TradingValidationError, validateTradeInput } from "../server/utils/trading-validation";
+import {
+  TradingValidationError,
+  validateDailyReviewInput,
+  validateTradeInput,
+} from "../server/utils/trading-validation";
 
 const validTrade = {
   status: "closed",
@@ -60,5 +64,18 @@ describe("trading input validation", () => {
       ...validTrade,
       exitAt: "2026-07-22T23:00:00.000Z",
     })).toThrow("平仓时间不能早于开仓时间");
+  });
+
+  it("accepts a positive integer version and allows it to be omitted for creation", () => {
+    expect(validateTradeInput({ ...validTrade, version: 3 }).version).toBe(3);
+    expect(validateTradeInput(validTrade).version).toBeUndefined();
+    expect(validateDailyReviewInput({ reviewDate: "2026-07-23", version: 2 }).version).toBe(2);
+    expect(validateDailyReviewInput({ reviewDate: "2026-07-23" }).version).toBeUndefined();
+  });
+
+  it.each([0, -1, 1.5, Number.NaN, "1"])("rejects invalid version %s", (version) => {
+    expect(() => validateTradeInput({ ...validTrade, version })).toThrow("版本号不合法");
+    expect(() => validateDailyReviewInput({ reviewDate: "2026-07-23", version }))
+      .toThrow("版本号不合法");
   });
 });

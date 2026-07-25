@@ -85,6 +85,14 @@ function optionalBoolean(value: unknown, label: string) {
   return value;
 }
 
+function optionalVersion(value: unknown) {
+  if (value === null || value === undefined || value === "") return undefined;
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
+    throw new TradingValidationError("版本号不合法");
+  }
+  return value;
+}
+
 export function validateTradeInput(value: unknown): TradeInput {
   const body = object(value);
   const status = enumValue(body.status, statuses, "交易状态");
@@ -136,7 +144,7 @@ export function validateTradeInput(value: unknown): TradeInput {
     errorNotes: optionalString(body.errorNotes, "错误复盘"),
     didWell: optionalString(body.didWell, "做对了什么"),
     nextImprovement: optionalString(body.nextImprovement, "下次改进"),
-    updatedAt: optionalString(body.updatedAt, "版本时间", 80) ?? undefined,
+    version: optionalVersion(body.version),
   };
 }
 
@@ -157,7 +165,7 @@ export function validateDailyReviewInput(value: unknown, routeDate?: string): Da
     exitedAsPlanned: optionalBoolean(body.exitedAsPlanned, "按计划离场"),
     priorityFix: optionalString(body.priorityFix, "优先修正项"),
     notes: optionalString(body.notes, "备注"),
-    updatedAt: optionalString(body.updatedAt, "版本时间", 80) ?? undefined,
+    version: optionalVersion(body.version),
   };
 }
 

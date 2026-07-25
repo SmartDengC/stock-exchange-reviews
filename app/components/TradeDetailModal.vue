@@ -36,7 +36,7 @@ async function removeTrade() {
   try {
     await $fetch(`/api/trading/trades/${trade.id}`, {
       method: "DELETE",
-      query: { updatedAt: trade.updatedAt },
+      query: { version: trade.version },
     });
     emit("deleted", trade.id);
     emit("close");

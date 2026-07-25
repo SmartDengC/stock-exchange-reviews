@@ -96,10 +96,11 @@ function resetForm() {
       errorNotes: props.trade.errorNotes,
       didWell: props.trade.didWell,
       nextImprovement: props.trade.nextImprovement,
-      updatedAt: props.trade.updatedAt,
+      version: props.trade.version,
     };
   }
   Object.assign(form, source);
+  if (!props.trade) form.version = undefined;
   entryLocal.value = localDateTime(source.entryAt);
   exitLocal.value = localDateTime(source.exitAt);
   queuedFiles.value = [];
@@ -166,18 +167,25 @@ async function imageSize(file: File) {
 }
 
 async function uploadQueued(trade: TradeView) {
-  for (const file of queuedFiles.value) {
+  while (queuedFiles.value.length) {
+    const file = queuedFiles.value[0]!;
     const size = await imageSize(file);
-    await upload(`trades/${trade.id}/${file.name}`, file, {
+    const blob = await upload(`trades/${trade.id}/${file.name}`, file, {
       access: "private",
       handleUploadUrl: `/api/trading/trades/${trade.id}/attachments`,
       clientPayload: JSON.stringify({
         tradeId: trade.id,
-        fileName: file.name,
-        size: file.size,
-        ...size,
       }),
     });
+    await $fetch(`/api/trading/trades/${trade.id}/attachments/complete`, {
+      method: "POST",
+      body: {
+        pathname: blob.pathname,
+        fileName: file.name,
+        ...size,
+      },
+    });
+    queuedFiles.value.shift();
   }
 }
 
@@ -196,7 +204,14 @@ async function save() {
     const trade = props.trade
       ? await $fetch<TradeView>(`/api/trading/trades/${props.trade.id}`, { method: "PATCH", body: payload })
       : await $fetch<TradeView>("/api/trading/trades", { method: "POST", body: payload });
-    await uploadQueued(trade);
+    form.version = trade.version;
+    try {
+      await uploadQueued(trade);
+    } catch (cause) {
+      emit("saved", trade);
+      error.value = `交易已保存，但截图上传失败：${errorMessage(cause)}`;
+      return;
+    }
     emit("saved", trade);
     emit("close");
   } catch (cause) {

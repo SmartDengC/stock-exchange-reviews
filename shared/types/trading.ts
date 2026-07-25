@@ -33,7 +33,7 @@ export type TradeInput = {
   errorNotes?: string | null;
   didWell?: string | null;
   nextImprovement?: string | null;
-  updatedAt?: string;
+  version?: number;
 };
 
 export type TradeAttachment = {
@@ -59,6 +59,7 @@ export type TradeView = TradeInput & {
   holdMinutes: number | null;
   isWinning: boolean | null;
   attachments: TradeAttachment[];
+  version: number;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -78,7 +79,7 @@ export type DailyReviewInput = {
   exitedAsPlanned?: boolean | null;
   priorityFix?: string | null;
   notes?: string | null;
-  updatedAt?: string;
+  version?: number;
 };
 
 export type DailyReviewView = DailyReviewInput & {
@@ -86,6 +87,7 @@ export type DailyReviewView = DailyReviewInput & {
   screenshotComplete: boolean;
   metrics: DashboardMetrics;
   trades: TradeView[];
+  version: number;
   createdAt: string;
   updatedAt: string;
 };
