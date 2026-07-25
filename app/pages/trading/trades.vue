@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getDefaultTradingDateRange } from "~~/shared/trading-date-range";
 import type { TradeView } from "~~/shared/types/trading";
 import { formatMoney, marketLabel, sideLabel, statusLabel } from "~/lib/trading";
 
@@ -6,9 +7,10 @@ definePageMeta({ middleware: "trading-auth" });
 useSeoMeta({ title: "交易记录 · 私有交易复盘", robots: "noindex, nofollow" });
 
 const route = useRoute();
+const defaultDateRange = getDefaultTradingDateRange();
 const filters = reactive({
-  from: "",
-  to: "",
+  from: defaultDateRange.from,
+  to: defaultDateRange.to,
   market: "",
   status: typeof route.query.status === "string" ? route.query.status : "",
   side: "",
@@ -55,7 +57,8 @@ function cloneTrade(trade: TradeView) {
 }
 
 function clearFilters() {
-  Object.assign(filters, { from: "", to: "", market: "", status: "", side: "", strategy: "", timeframe: "", grade: "", emotion: "", errorTag: "", outcome: "", q: "" });
+  const dateRange = getDefaultTradingDateRange();
+  Object.assign(filters, { ...dateRange, market: "", status: "", side: "", strategy: "", timeframe: "", grade: "", emotion: "", errorTag: "", outcome: "", q: "" });
 }
 
 async function reloadData() {
