@@ -8,6 +8,30 @@ TradingView Desktop 图表。
 > TradingView MCP 是非官方工具，通过 TradingView Desktop 的 Electron 调试接口工作。
 > 请遵守 TradingView 服务条款以及行情数据许可要求，不要将其用于自动交易、绕过访问限制或重新分发行情数据。
 
+## 安装 Prompt
+
+将下面这段 prompt 发送给 Codex，即可让 Codex 在本机安装并配置 TradingView MCP：
+
+```text
+在我的本机安装并配置 TradingView MCP，使 Codex Desktop、Codex CLI 和 IDE 扩展能够连接本机的 TradingView Desktop。
+
+请完成以下操作：
+
+1. 检查 Git、Node.js 18+、npm 和 TradingView Desktop 是否已安装；缺少依赖时先说明，不要静默安装系统级软件。
+2. 将 https://github.com/tradesdontlie/tradingview-mcp.git 克隆到 ~/tradingview-mcp。若目录已存在，不要覆盖或删除，先检查当前状态并复用。
+3. 在仓库目录运行 npm install。
+4. 使用绝对路径将它注册为名为 tradingview 的 Codex STDIO MCP server。优先执行：
+   codex mcp add tradingview -- node "<仓库绝对路径>/src/server.js"
+5. Codex 的 MCP 配置应写入 ~/.codex/config.toml，而不是 ~/.claude/.mcp.json。保留现有配置和其他 MCP server，不要覆盖整个配置文件。
+6. 运行 codex mcp list，确认 tradingview 已注册。
+7. 在启动或重启桌面应用、结束现有 TradingView 进程、写入 ~/.codex/config.toml，或执行其他需要额外权限的操作前，向我申请批准。
+8. 使用仓库提供的当前平台启动脚本启动 TradingView Desktop，并启用本地 Chrome DevTools Protocol 端口 9222。只允许本机访问，不要将调试端口暴露到局域网或公网。
+9. 如果新增的 MCP 工具必须重启 Codex 后才能加载，请明确告诉我重启 Codex。重启后使用 tradingview MCP 的 tv_health_check 工具验证连接。
+10. 最后报告安装路径、MCP 注册状态、TradingView 调试端口状态和 tv_health_check 结果；如果验证失败，给出具体错误和下一步修复方法。
+
+不要执行 npm link，除非我另外要求安装全局 tv CLI。
+```
+
 ## 1. 本机配置
 
 当前机器采用以下配置：
@@ -368,4 +392,3 @@ codex mcp list
 - [ ] `tv_health_check` 返回 `success=true` 和 `cdp_connected=true`。
 - [ ] 修改或删除操作已获得明确确认。
 - [ ] 没有调用 `tv_update`。
-
