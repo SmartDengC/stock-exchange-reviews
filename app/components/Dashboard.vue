@@ -94,18 +94,6 @@ const driverCards = [
 
     <section class="dashboard-grid">
       <aside class="archive-rail" aria-label="复盘资料导航">
-        <NuxtLink class="brand" to="/">
-          <span class="brand-mark">M</span>
-          <span>市场日记<small>MARKET DIARY</small></span>
-        </NuxtLink>
-
-        <nav class="section-nav" aria-label="页面章节">
-          <a href="#overview"><span>01</span>市场概览</a>
-          <a href="#rotation"><span>02</span>板块轮动</a>
-          <a href="#drivers"><span>03</span>驱动框架</a>
-          <a href="#outlook"><span>04</span>情景推演</a>
-        </nav>
-
         <div id="archives" class="archive-list">
           <p class="rail-label">周度回顾</p>
           <button
@@ -143,12 +131,6 @@ const driverCards = [
             <span>当前策略</span><strong>防御模式</strong><small>现金流与低波动优先</small>
           </article>
         </section>
-
-        <article class="conclusion-card">
-          <div class="conclusion-label"><i /> 本周结论</div>
-          <p>{{ stripMarkdown(summary) }}</p>
-          <div class="conclusion-meta"><span>数据来自本地资料库</span><span>构建时同步</span></div>
-        </article>
 
         <section class="content-section" aria-label="跨市场表现">
           <PanelHeader eyebrow="CROSS-ASSET / WEEKLY" title="跨市场表现" />
