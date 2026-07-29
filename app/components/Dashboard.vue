@@ -10,6 +10,7 @@ import {
   weeklyReviews,
   type ReviewRecord,
 } from "~/lib/reviews";
+import { tradingRules } from "~/lib/trading-rules";
 
 type Asset = {
   label: string;
@@ -90,6 +91,8 @@ const driverCards = [
         <button type="button" class="primary-link overlay-trigger" @click="openReview(review)">阅读完整周报 ↗</button>
       </div>
     </header>
+
+    <TradingRulesPanel :document="tradingRules" />
 
     <section class="dashboard-grid">
       <aside class="archive-rail" aria-label="复盘资料导航">

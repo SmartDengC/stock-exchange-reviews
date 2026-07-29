@@ -21,9 +21,11 @@ async function expectedReviewKeys() {
   ].sort();
 }
 
-test("syncs only dated reviews and registers their static routes", async () => {
-  const [generatedSource, nuxtConfig, expectedKeys] = await Promise.all([
+test("syncs only dated reviews, syncs trading rules, and registers static routes", async () => {
+  const [generatedSource, generatedTradingRulesSource, tradingRulesSource, nuxtConfig, expectedKeys] = await Promise.all([
     readFile(new URL("app/lib/generated-reviews.ts", projectRoot), "utf8"),
+    readFile(new URL("app/lib/generated-trading-rules.ts", projectRoot), "utf8"),
+    readFile(new URL("rules/trading-rules.md", reviewsRoot), "utf8"),
     readFile(new URL("nuxt.config.ts", projectRoot), "utf8"),
     expectedReviewKeys(),
   ]);
@@ -36,6 +38,10 @@ test("syncs only dated reviews and registers their static routes", async () => {
 
   assert.deepEqual(generatedKeys, expectedKeys);
   assert.equal(generatedKeys.includes("reviews/README.md"), false);
+  const serializedTradingRules = generatedTradingRulesSource
+    .replace(/^.*?=\s*/s, "")
+    .replace(/;\s*$/, "");
+  assert.equal(JSON.parse(serializedTradingRules), tradingRulesSource);
   assert.match(nuxtConfig, /const reportRoutes = reviews\.map\(reviewRoute\)/);
   assert.match(nuxtConfig, /routes:\s*\["\/", \.\.\.reportRoutes\]/);
 
