@@ -14,7 +14,10 @@ function ruleNumber(index: number) {
       <div>
         <p class="trading-rules-eyebrow">TRADING DISCIPLINE / MUST FOLLOW</p>
         <h2 id="trading-rules-title">{{ document.title }}</h2>
-        <p v-if="document.updatedAt" class="trading-rules-updated">最后更新：{{ document.updatedAt }}</p>
+        <p class="trading-rules-updated">
+          <span v-if="document.updatedAt">最后更新：{{ document.updatedAt }}</span>
+          <span>共 {{ document.rules.length }} 条</span>
+        </p>
       </div>
       <strong class="trading-rules-required">
         <span aria-hidden="true">!</span>
@@ -27,7 +30,7 @@ function ruleNumber(index: number) {
         <span class="trading-rule-number" aria-hidden="true">{{ ruleNumber(index) }}</span>
         <div>
           <h3>{{ rule.title }}</h3>
-          <p>{{ rule.description }}</p>
+          <p v-if="rule.description">{{ rule.description }}</p>
         </div>
       </li>
     </ol>
