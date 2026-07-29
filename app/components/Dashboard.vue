@@ -92,8 +92,6 @@ const driverCards = [
       </div>
     </header>
 
-    <TradingRulesPanel :document="tradingRules" />
-
     <section class="dashboard-grid">
       <aside class="archive-rail" aria-label="复盘资料导航">
         <NuxtLink class="brand" to="/">
@@ -205,32 +203,36 @@ const driverCards = [
         </section>
       </section>
 
-      <aside class="insight-panel" aria-label="本周趋势与事件">
-        <PanelHeader eyebrow="WEEKLY SIGNAL" title="本周观察" />
-        <section class="temperature-box">
-          <span>风险温度</span><strong>18<small>/100</small></strong>
-          <div class="temperature-scale"><i class="active" /><i /><i /><i /><i /></div>
-          <p>市场处于风险规避区间，防御资产相对占优。</p>
-        </section>
+      <div class="right-rail">
+        <aside class="insight-panel" aria-label="本周趋势与事件">
+          <PanelHeader eyebrow="WEEKLY SIGNAL" title="本周观察" />
+          <section class="temperature-box">
+            <span>风险温度</span><strong>18<small>/100</small></strong>
+            <div class="temperature-scale"><i class="active" /><i /><i /><i /><i /></div>
+            <p>市场处于风险规避区间，防御资产相对占优。</p>
+          </section>
 
-        <section class="signal-summary">
-          <span>核心判断</span>
-          <p>{{ stripMarkdown(summary) }}</p>
-        </section>
+          <section class="signal-summary">
+            <span>核心判断</span>
+            <p>{{ stripMarkdown(summary) }}</p>
+          </section>
 
-        <section class="timeline-section">
-          <div class="subsection-head"><h3>关键事件时间线</h3><span>MACRO CLOCK</span></div>
-          <ol v-if="timeline" class="timeline">
-            <li v-for="row in timeline.rows.slice(0, 8)" :key="`${row[0]}-${row[1]}`">
-              <time>{{ row[0] }}</time>
-              <div><b>{{ row[1] }}</b><p :class="`tone-${changeTone(row[2])}`">{{ row[2] }}</p></div>
-            </li>
-          </ol>
-          <p v-else class="empty-copy">暂无时间线数据</p>
-        </section>
+          <section class="timeline-section">
+            <div class="subsection-head"><h3>关键事件时间线</h3><span>MACRO CLOCK</span></div>
+            <ol v-if="timeline" class="timeline">
+              <li v-for="row in timeline.rows.slice(0, 8)" :key="`${row[0]}-${row[1]}`">
+                <time>{{ row[0] }}</time>
+                <div><b>{{ row[1] }}</b><p :class="`tone-${changeTone(row[2])}`">{{ row[2] }}</p></div>
+              </li>
+            </ol>
+            <p v-else class="empty-copy">暂无时间线数据</p>
+          </section>
 
-        <button type="button" class="insight-link overlay-trigger" @click="openReview(review)">查看全部研究记录 <span>→</span></button>
-      </aside>
+          <button type="button" class="insight-link overlay-trigger" @click="openReview(review)">查看全部研究记录 <span>→</span></button>
+        </aside>
+
+        <TradingRulesPanel :document="tradingRules" />
+      </div>
     </section>
 
     <footer>本系统仅用于个人研究与历史复盘，不构成任何投资建议。<span>MARKET DIARY · BUILD-TIME RESEARCH SYSTEM</span></footer>

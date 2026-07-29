@@ -80,80 +80,78 @@ footer {
 .topbar-actions { flex-wrap: wrap; justify-content: flex-end; }
 
 .trading-rules-panel {
-  margin-bottom: 12px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--neutral) 48%, var(--border));
-  border-top: 3px solid var(--neutral);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--neutral);
   border-radius: var(--radius);
-  background:
-    linear-gradient(115deg, color-mix(in srgb, var(--neutral) 9%, var(--surface)), var(--surface) 48%, color-mix(in srgb, var(--positive) 6%, var(--surface)));
-  box-shadow: var(--shadow);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
 }
 .trading-rules-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
-  padding: 16px 18px 14px;
-  border-bottom: 1px solid color-mix(in srgb, var(--neutral) 30%, var(--border));
+  gap: 12px;
+  padding: 13px 14px 12px;
+  border-bottom: 1px solid var(--border);
 }
 .trading-rules-eyebrow {
-  margin: 0 0 4px;
-  color: var(--neutral);
-  font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: .12em;
+  margin: 0 0 3px;
+  color: var(--primary);
+  font: 700 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .1em;
 }
-.trading-rules-heading h2 { margin: 0; font-size: 21px; line-height: 1.3; letter-spacing: -.02em; }
+.trading-rules-heading h2 { margin: 0; font-size: 16px; line-height: 1.35; letter-spacing: -.02em; }
 .trading-rules-updated { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
 .trading-rules-required {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 7px;
-  padding: 7px 10px;
-  border: 1px solid color-mix(in srgb, var(--positive) 42%, var(--border));
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--positive) 9%, var(--surface));
-  color: var(--positive);
-  font-size: 12px;
-  letter-spacing: .04em;
+  gap: 5px;
+  padding: 5px 7px;
+  border: 1px solid color-mix(in srgb, var(--neutral) 38%, var(--border));
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--neutral) 8%, var(--surface));
+  color: var(--neutral);
+  font-size: 10px;
+  letter-spacing: .02em;
 }
 .trading-rules-required span {
   display: grid;
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   place-items: center;
   border-radius: 50%;
-  background: var(--positive);
+  background: var(--neutral);
   color: var(--surface);
-  font: 800 12px/1 ui-monospace, monospace;
+  font: 800 10px/1 ui-monospace, monospace;
 }
 .trading-rules-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
+  grid-template-columns: 1fr;
   margin: 0;
   padding: 0;
-  background: color-mix(in srgb, var(--neutral) 22%, var(--border));
   list-style: none;
 }
 .trading-rule {
   display: grid;
   min-width: 0;
-  min-height: 132px;
-  grid-template-columns: 30px 1fr;
-  gap: 10px;
-  padding: 14px 15px;
-  background: color-mix(in srgb, var(--surface) 96%, var(--neutral));
+  grid-template-columns: 26px 1fr;
+  gap: 7px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
 }
+.trading-rule:last-child { border-bottom: 0; }
+.trading-rule:hover { background: color-mix(in srgb, var(--neutral) 4%, var(--surface)); }
 .trading-rule-number {
-  padding-top: 2px;
+  padding-top: 1px;
   color: var(--neutral);
-  font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  font: 700 10px ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: .08em;
 }
-.trading-rule h3 { margin: 0 0 7px; font-size: 14px; line-height: 1.4; }
-.trading-rule p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+.trading-rule h3 { margin: 0 0 4px; font-size: 12px; line-height: 1.4; }
+.trading-rule p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
 
 .primary-link,
 .secondary-link,
@@ -203,14 +201,14 @@ footer {
 }
 
 .archive-rail,
-.insight-panel {
+.right-rail {
   position: sticky;
   top: 14px;
-  max-height: calc(100vh - 28px);
-  overflow: hidden;
 }
 
 .archive-rail { display: flex; flex-direction: column; }
+.archive-rail { max-height: calc(100vh - 28px); overflow: hidden; }
+.right-rail { display: grid; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 9px; padding: 14px; font-size: 14px; font-weight: 700; }
 .brand small { display: block; margin-top: 1px; color: var(--muted); font-size: 9px; font-weight: 500; letter-spacing: .14em; }
 .brand-mark { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 6px; background: var(--primary); color: white; font: 700 16px Georgia, serif; }
@@ -519,17 +517,19 @@ footer span { font: 9px ui-monospace, monospace; letter-spacing: .08em; }
 
 @media (max-width: 1380px) {
   .dashboard-grid { grid-template-columns: 240px minmax(520px, 1fr); }
-  .insight-panel { grid-column: 1 / -1; position: static; display: grid; grid-template-columns: 190px 1fr 1.4fr; gap: 12px; max-height: none; }
+  .right-rail { grid-column: 1 / -1; position: static; }
+  .insight-panel { display: grid; grid-template-columns: 190px 1fr 1.4fr; gap: 12px; }
   .insight-panel > .panel-heading { grid-column: 1 / -1; }
   .signal-summary, .timeline-section { margin: 0; padding: 11px; border: 1px solid var(--border); border-radius: 7px; }
   .insight-link { grid-column: 1 / -1; }
+  .trading-rules-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .trading-rule:nth-child(odd) { border-right: 1px solid var(--border); }
 }
 
 @media (max-width: 980px) {
   .app-shell { width: min(100vw - 20px, 1760px); margin-top: 12px; }
   .topbar { display: block; }
   .topbar-actions { justify-content: flex-start; margin-top: 10px; }
-  .trading-rules-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-grid { grid-template-columns: 1fr; }
   .archive-rail { position: static; max-height: 300px; }
   .archive-rail .brand, .section-nav { display: none; }
@@ -550,6 +550,7 @@ footer span { font: 9px ui-monospace, monospace; letter-spacing: .08em; }
   .trading-rules-heading { align-items: stretch; flex-direction: column; gap: 10px; padding: 14px; }
   .trading-rules-required { align-self: flex-start; }
   .trading-rules-grid { grid-template-columns: 1fr; }
+  .trading-rule:nth-child(odd) { border-right: 0; }
   .trading-rule { min-height: auto; padding: 13px 14px; }
   .archive-rail { max-height: 250px; box-shadow: none; }
   .archive-list { grid-template-columns: 1fr; }
