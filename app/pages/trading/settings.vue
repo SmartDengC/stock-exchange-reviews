@@ -21,6 +21,8 @@ const grouped = computed(() => ({
   timeframe: data.value?.options.filter((item) => item.kind === "timeframe") ?? [],
   emotion: data.value?.options.filter((item) => item.kind === "emotion") ?? [],
   error_tag: data.value?.options.filter((item) => item.kind === "error_tag") ?? [],
+  instrument_code: data.value?.options.filter((item) => item.kind === "instrument_code") ?? [],
+  symbol: data.value?.options.filter((item) => item.kind === "symbol") ?? [],
 }));
 
 async function saveRate() {
@@ -82,13 +84,13 @@ const exportUrl = computed(() => {
       <article class="trading-panel settings-options-panel">
         <header><div><span class="eyebrow">INPUT DICTIONARY</span><h2>录入字典</h2></div></header>
         <div class="settings-add-option">
-          <select v-model="newOption.kind"><option value="strategy">策略</option><option value="timeframe">周期</option><option value="emotion">情绪</option><option value="error_tag">错误标签</option></select>
+          <select v-model="newOption.kind"><option value="strategy">策略</option><option value="timeframe">周期</option><option value="emotion">情绪</option><option value="error_tag">错误标签</option><option value="instrument_code">证券代码</option><option value="symbol">标的</option></select>
           <input v-model="newOption.label" placeholder="输入新选项" @keydown.enter.prevent="addOption">
           <button class="trading-secondary-button" type="button" @click="addOption">新增</button>
         </div>
         <div class="option-groups">
           <section v-for="(items, kind) in grouped" :key="kind">
-            <h3>{{ { strategy: "策略", timeframe: "周期", emotion: "情绪", error_tag: "错误标签" }[kind] }}</h3>
+            <h3>{{ { strategy: "策略", timeframe: "周期", emotion: "情绪", error_tag: "错误标签", instrument_code: "证券代码", symbol: "标的" }[kind] }}</h3>
             <div><button v-for="item in items" :key="item.id" type="button" :class="{ inactive: !item.active }" @click="toggleOption(item)">{{ item.label }}<span>{{ item.active ? "启用" : "停用" }}</span></button></div>
           </section>
         </div>

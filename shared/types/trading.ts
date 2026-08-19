@@ -4,7 +4,7 @@ export type TradeStatus = "open" | "closed";
 export type PositionBasis = "quantity" | "notional";
 export type SettlementCurrency = "CNY" | "USDT" | "USD";
 export type ExecutionGrade = "A" | "B" | "C";
-export type TradingOptionKind = "strategy" | "timeframe" | "emotion" | "error_tag";
+export type TradingOptionKind = "strategy" | "timeframe" | "emotion" | "error_tag" | "instrument_code" | "symbol";
 
 export type TradeInput = {
   status: TradeStatus;

@@ -38,6 +38,8 @@ const strategies = computed(() => options.value?.options.filter((item) => item.k
 const timeframes = computed(() => options.value?.options.filter((item) => item.kind === "timeframe" && item.active) ?? []);
 const emotions = computed(() => options.value?.options.filter((item) => item.kind === "emotion" && item.active) ?? []);
 const errorTags = computed(() => options.value?.options.filter((item) => item.kind === "error_tag" && item.active) ?? []);
+const instrumentCodes = computed(() => options.value?.options.filter((item) => item.kind === "instrument_code" && item.active) ?? []);
+const symbols = computed(() => options.value?.options.filter((item) => item.kind === "symbol" && item.active) ?? []);
 
 const preview = computed(() => {
   try {
@@ -245,8 +247,8 @@ async function save() {
                   <label>交易日期<input v-model="form.tradeDate" type="date" required></label>
                   <label>市场<select v-model="form.market"><option value="crypto">加密</option><option value="a_share">A股</option></select></label>
                   <label>方向<select v-model="form.side"><option value="long">做多</option><option value="short">做空</option></select></label>
-                  <label>合约/证券代码<input v-model="form.instrumentCode" placeholder="MUUSDT / 159316"></label>
-                  <label>标的<input v-model="form.symbol" required placeholder="标的名称"></label>
+                  <label>合约/证券代码<input v-model="form.instrumentCode" list="trade-instrument-codes" placeholder="MUUSDT / 159316"><datalist id="trade-instrument-codes"><option v-for="item in instrumentCodes" :key="item.id" :value="item.label" /></datalist></label>
+                  <label>标的<input v-model="form.symbol" list="trade-symbols" required placeholder="标的名称"><datalist id="trade-symbols"><option v-for="item in symbols" :key="item.id" :value="item.label" /></datalist></label>
                   <label>策略<input v-model="form.strategy" list="trade-strategies" required><datalist id="trade-strategies"><option v-for="item in strategies" :key="item.id" :value="item.label" /></datalist></label>
                   <label>周期<input v-model="form.timeframe" list="trade-timeframes" required><datalist id="trade-timeframes"><option v-for="item in timeframes" :key="item.id" :value="item.label" /></datalist></label>
                 </div>
