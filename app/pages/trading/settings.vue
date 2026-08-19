@@ -2,7 +2,6 @@
 import type { TradingOptionKind, TradingOptionsResponse } from "~~/shared/types/trading";
 import { errorMessage } from "~/lib/trading";
 
-definePageMeta({ middleware: "trading-auth" });
 useSeoMeta({ title: "设置与导出 · 私有交易复盘", robots: "noindex, nofollow" });
 
 const { data, pending, error, refresh } = await useFetch<TradingOptionsResponse>("/api/trading/options");

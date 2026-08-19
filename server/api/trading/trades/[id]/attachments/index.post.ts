@@ -1,6 +1,6 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { getRouterParam, readBody } from "h3";
-import { assertSameOrigin, requireActiveAdminSession } from "../../../../../utils/review-api";
+import { assertSameOrigin } from "../../../../../utils/review-api";
 import { getTrade } from "../../../../../utils/trading-repository";
 
 type UploadPayload = {
@@ -20,7 +20,6 @@ export default defineEventHandler(async (event) => {
     request,
     token,
     onBeforeGenerateToken: async (pathname, clientPayload) => {
-      await requireActiveAdminSession(event);
       const trade = await getTrade(event, routeTradeId);
       if (!trade) throw new Error("交易记录不存在");
       if (trade.attachments.length >= 10) throw new Error("每笔交易最多上传 10 张截图");

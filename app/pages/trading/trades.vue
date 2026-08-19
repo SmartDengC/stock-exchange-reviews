@@ -4,7 +4,6 @@ import { getDefaultTradingDateRange } from "~~/shared/trading-date-range";
 import type { TradeView, TradingOptionsResponse } from "~~/shared/types/trading";
 import { formatMoney, marketLabel, sideLabel, statusLabel } from "~/lib/trading";
 
-definePageMeta({ middleware: "trading-auth" });
 useSeoMeta({ title: "交易记录 · 私有交易复盘", robots: "noindex, nofollow" });
 
 const route = useRoute();

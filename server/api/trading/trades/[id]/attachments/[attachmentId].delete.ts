@@ -1,11 +1,10 @@
 import { del } from "@vercel/blob";
 import { getRouterParam } from "h3";
-import { assertSameOrigin, requireActiveAdminSession } from "../../../../../utils/review-api";
+import { assertSameOrigin } from "../../../../../utils/review-api";
 import { deleteAttachmentRecord } from "../../../../../utils/trading-repository";
 
 export default defineEventHandler(async (event) => {
   assertSameOrigin(event);
-  await requireActiveAdminSession(event);
   const row = await deleteAttachmentRecord(
     event,
     getRouterParam(event, "id") ?? "",

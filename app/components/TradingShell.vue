@@ -54,13 +54,12 @@ async function logout() {
       </nav>
 
       <div class="trading-side-note">
-        <span class="status-dot" /> 管理员私有空间
-        <small>交易与截图不会进入公开研究资料。</small>
+        <span class="status-dot" /> 交易复盘
+        <small>交易与截图仅登录后可见。</small>
       </div>
 
       <div class="trading-side-actions">
-        <NuxtLink to="/">返回公开研究终端 ↗</NuxtLink>
-        <button type="button" @click="logout">退出登录</button>
+        <NuxtLink to="/">返回研究终端 ↗</NuxtLink>
       </div>
     </aside>
 

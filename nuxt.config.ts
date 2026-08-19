@@ -1,6 +1,5 @@
 import tailwindcss from "@tailwindcss/vite";
 import { reviewRoute, reviews } from "./app/lib/reviews";
-import { ADMIN_SESSION_MAX_AGE_SECONDS } from "./shared/auth-session";
 
 const reportRoutes = reviews.map(reviewRoute);
 
@@ -10,7 +9,6 @@ export default defineNuxtConfig({
   modules: ["@nuxt/eslint", "nuxt-auth-utils"],
   css: [
     "@arco-design/web-vue/dist/arco.css",
-    "md-editor-v3/lib/style.css",
     "~/assets/css/main.css",
     "~/assets/css/trading.css",
   ],
@@ -27,16 +25,15 @@ export default defineNuxtConfig({
     },
   },
   routeRules: {
-    "/": { prerender: true },
-    "/report/**": { prerender: true },
+    "/": { prerender: false },
+    "/login": { prerender: false },
+    "/report/**": { prerender: false },
     "/trading/**": { ssr: true, prerender: false, headers: { "cache-control": "private, no-store" } },
     "/api/trading/**": { headers: { "cache-control": "private, no-store" } },
   },
   runtimeConfig: {
-    session: {
-      maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
-    },
-    adminPasswordHash: "",
+    username: "",
+    password: "",
     githubToken: "",
     githubOwner: "SmartDengC",
     githubRepo: "stock-exchange-reviews",

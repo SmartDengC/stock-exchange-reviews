@@ -2,7 +2,6 @@
 import type { DailyReviewInput, DailyReviewView } from "~~/shared/types/trading";
 import { errorMessage, formatMoney, formatPercent } from "~/lib/trading";
 
-definePageMeta({ middleware: "trading-auth" });
 const route = useRoute();
 const date = computed(() => String(route.params.date));
 useSeoMeta({ title: () => `${date.value} 日复盘 · 私有交易复盘`, robots: "noindex, nofollow" });

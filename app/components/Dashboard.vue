@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useUserSession } from "#imports";
 import {
   changeTone,
   dailyReviews,
@@ -23,9 +24,16 @@ type Asset = {
 
 const props = defineProps<{ review: ReviewRecord }>();
 const selectedReview = ref<ReviewRecord | null>(null);
+const { fetch: refreshSession } = useUserSession();
 
 function openReview(review: ReviewRecord) {
   selectedReview.value = review;
+}
+
+async function logout() {
+  await $fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+  await refreshSession();
+  await navigateTo("/login");
 }
 
 function assetFrom(table: ReturnType<typeof firstTable>, name: string, label: string, market: string): Asset {
@@ -92,7 +100,8 @@ const driverCards = [
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.05-.015-2.055-3.33.72-4.035-1.605-4.035-1.605-.54-1.38-1.32-1.755-1.32-1.755-1.08-.75.09-.735.09-.735 1.2.075 1.83 1.23 1.83 1.23 1.065 1.815 2.805 1.29 3.495.99.105-.78.42-1.29.765-1.59-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405 1.02 0 2.04.135 3 .405 2.28-1.56 3.285-1.23 3.285-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.285 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
             </svg>
           </a>
-          <NuxtLink class="secondary-link" to="/trading">交易复盘 🔒</NuxtLink>
+          <NuxtLink class="secondary-link" to="/trading">交易复盘</NuxtLink>
+          <button type="button" class="secondary-link" @click="logout">退出登录</button>
         </div>
     </header>
 

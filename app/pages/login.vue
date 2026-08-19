@@ -51,18 +51,18 @@ async function login() {
         <p>请输入账号和密码进入研究终端。</p>
       </div>
       <form @submit.prevent="login">
-        <label for="trading-username">账号</label>
+        <label for="login-username">账号</label>
         <input
-          id="trading-username"
+          id="login-username"
           v-model="username"
           type="text"
           autocomplete="username"
           autofocus
           placeholder="输入账号"
         >
-        <label for="trading-password">密码</label>
+        <label for="login-password">密码</label>
         <input
-          id="trading-password"
+          id="login-password"
           v-model="password"
           type="password"
           autocomplete="current-password"

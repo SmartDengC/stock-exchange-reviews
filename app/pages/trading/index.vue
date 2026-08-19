@@ -3,7 +3,6 @@ import { getDefaultTradingDateRange } from "~~/shared/trading-date-range";
 import type { TradeView, TradingDashboard } from "~~/shared/types/trading";
 import { formatMoney, formatNumber, formatPercent, marketLabel, sideLabel } from "~/lib/trading";
 
-definePageMeta({ middleware: "trading-auth" });
 useSeoMeta({ title: "交易总览 · 私有交易复盘", robots: "noindex, nofollow" });
 
 const defaultDateRange = getDefaultTradingDateRange();

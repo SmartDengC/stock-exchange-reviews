@@ -1,6 +1,6 @@
 import { head } from "@vercel/blob";
 import { getRouterParam, readBody } from "h3";
-import { assertSameOrigin, requireActiveAdminSession } from "../../../../../utils/review-api";
+import { assertSameOrigin } from "../../../../../utils/review-api";
 import {
   TradingAttachmentValidationError,
   validateAttachmentCompletion,
@@ -12,7 +12,6 @@ const maximumSizeInBytes = 15 * 1024 * 1024;
 
 export default defineEventHandler(async (event) => {
   assertSameOrigin(event);
-  await requireActiveAdminSession(event);
   const tradeId = getRouterParam(event, "id") ?? "";
   const trade = await getTrade(event, tradeId);
   if (!trade) throw createError({ statusCode: 404, message: "交易记录不存在" });

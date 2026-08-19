@@ -1,10 +1,8 @@
 import { get } from "@vercel/blob";
 import { getRouterParam, sendStream, setResponseHeader, setResponseStatus } from "h3";
-import { requireActiveAdminSession } from "../../../utils/review-api";
 import { getAttachment } from "../../../utils/trading-repository";
 
 export default defineEventHandler(async (event) => {
-  await requireActiveAdminSession(event);
   const attachment = await getAttachment(event, getRouterParam(event, "attachmentId") ?? "");
   if (!attachment) throw createError({ statusCode: 404, message: "未找到截图" });
   const token = useRuntimeConfig(event).blobReadWriteToken || process.env.BLOB_READ_WRITE_TOKEN;

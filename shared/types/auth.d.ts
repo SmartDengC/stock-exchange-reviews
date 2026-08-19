@@ -1,13 +1,11 @@
 declare module "#auth-utils" {
   interface User {
-    name: string;
-    role: "admin";
+    username: string;
+    role: "user";
   }
 
   interface UserSession {
-    expiresAt: string;
-    lastActivityAt: string;
-    loggedInAt: string;
+    // 简化，不再需要时间戳字段
   }
 }
 

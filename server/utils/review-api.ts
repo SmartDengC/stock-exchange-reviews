@@ -1,6 +1,5 @@
 import type { H3Event } from "h3";
 import { createError, getRequestHeader, getRequestURL } from "h3";
-import { ADMIN_SESSION_MAX_AGE_SECONDS, isAdminSessionExpired } from "../../shared/auth-session";
 import {
   GitHubApiError,
   ReviewValidationError,
@@ -26,32 +25,10 @@ export function getRepositoryConfig(event: H3Event): GitHubRepositoryConfig {
   if (!repository.owner || !repository.repo || !repository.branch || !repository.token) {
     throw createError({
       statusCode: 503,
-      message: "在线编辑服务尚未配置完成",
+      message: "GitHub 配置未完成",
     });
   }
   return repository;
-}
-
-export async function requireActiveAdminSession(event: H3Event) {
-  const session = await requireUserSession(event, {
-    message: "请先登录管理员账户",
-  });
-  if (isAdminSessionExpired(session)) {
-    await clearUserSession(event);
-    throw createError({
-      statusCode: 401,
-      message: "登录已超时，请重新登录",
-    });
-  }
-
-  const now = new Date();
-  await setUserSession(event, {
-    user: session.user,
-    loggedInAt: session.loggedInAt,
-    lastActivityAt: now.toISOString(),
-    expiresAt: new Date(now.getTime() + ADMIN_SESSION_MAX_AGE_SECONDS * 1000).toISOString(),
-  }, { maxAge: ADMIN_SESSION_MAX_AGE_SECONDS });
-  return session;
 }
 
 export function throwReviewApiError(error: unknown): never {

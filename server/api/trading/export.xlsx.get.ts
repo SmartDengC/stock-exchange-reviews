@@ -3,7 +3,6 @@ import { and, asc, gte, isNull, lte } from "drizzle-orm";
 import { dailyReviews } from "../../../db/schema";
 import { getRequestURL, send, setResponseHeader } from "h3";
 import { marketLabel, sideLabel, basisLabel, statusLabel } from "~~/shared/labels";
-import { requireActiveAdminSession } from "../../utils/review-api";
 import { getTradingDb } from "../../utils/trading-db";
 import { listTrades } from "../../utils/trading-repository";
 
@@ -17,7 +16,6 @@ const headers = [
 
 
 export default defineEventHandler(async (event) => {
-  await requireActiveAdminSession(event);
   const query = getQuery(event);
   const from = typeof query.from === "string" ? query.from : undefined;
   const to = typeof query.to === "string" ? query.to : undefined;

@@ -5,13 +5,11 @@ const props = defineProps<{ review: ReviewRecord | null }>();
 const emit = defineEmits<{ close: [] }>();
 
 const closeButton = ref<HTMLButtonElement | null>(null);
-const documentEditor = ref<{ confirmDiscard: () => boolean } | null>(null);
 let bodyOverflow = "";
 let returnFocus: HTMLElement | null = null;
 let scrollLocked = false;
 
 function close() {
-  if (documentEditor.value && !documentEditor.value.confirmDiscard()) return;
   emit("close");
 }
 
@@ -32,21 +30,21 @@ function onKeydown(event: KeyboardEvent) {
   if (event.key === "Escape" && props.review) close();
 }
 
-watch(() => Boolean(props.review), async (visible) => {
+watch(() => Boolean(props.review), (visible) => {
   if (!import.meta.client) return;
 
   if (visible) {
     returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     lockPageScroll();
-    await nextTick();
-    closeButton.value?.focus();
+    nextTick().then(() => closeButton.value?.focus());
     return;
   }
 
   unlockPageScroll();
-  await nextTick();
-  returnFocus?.focus();
-  returnFocus = null;
+  nextTick().then(() => {
+    returnFocus?.focus();
+    returnFocus = null;
+  });
 });
 
 onMounted(() => document.addEventListener("keydown", onKeydown));
@@ -78,7 +76,7 @@ onBeforeUnmount(() => {
           </header>
 
           <div class="review-overlay-body">
-            <ReviewDocumentEditor ref="documentEditor" :review="review" />
+            <MarkdownDocument :markdown="review.raw" />
           </div>
         </section>
       </div>

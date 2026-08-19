@@ -2,7 +2,6 @@
 import type { TradingDashboard } from "~~/shared/types/trading";
 import { formatMoney, formatPercent } from "~/lib/trading";
 
-definePageMeta({ middleware: "trading-auth" });
 useSeoMeta({ title: "统计洞察 · 私有交易复盘", robots: "noindex, nofollow" });
 
 const from = ref("");
