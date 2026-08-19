@@ -1,4 +1,5 @@
 import type { H3Event } from "h3";
+import { del } from "@vercel/blob";
 import Decimal from "decimal.js";
 import {
   and,
@@ -17,7 +18,7 @@ import {
   dailyReviews,
   tradeAttachments,
   tradeErrorTags,
-  trades,
+  trades as tradesTable,
   tradingOptions,
   tradingSettings,
 } from "../../db/schema";
@@ -29,6 +30,7 @@ import type {
   DashboardMetrics,
   TradeAttachment,
   TradeInput,
+  TradeListFilters as TradeListFiltersType,
   TradeView,
   TradingDashboard,
   TradingOption,
@@ -36,7 +38,7 @@ import type {
 } from "../../shared/types/trading";
 import { getTradingDb } from "./trading-db";
 
-type TradeRow = typeof trades.$inferSelect;
+type TradeRow = typeof tradesTable.$inferSelect;
 
 function iso(value: Date | string | null) {
   if (!value) return null;
@@ -126,21 +128,8 @@ export async function hydrateTrades(event: H3Event, rows: TradeRow[]) {
   }));
 }
 
-export type TradeListFilters = {
-  from?: string;
-  to?: string;
-  market?: string;
-  status?: string;
-  side?: string;
-  strategy?: string;
-  timeframe?: string;
-  grade?: string;
-  emotion?: string;
-  errorTag?: string;
-  query?: string;
-  outcome?: "win" | "loss";
+export type TradeListFilters = TradeListFiltersType & {
   includeDeleted?: boolean;
-  limit?: number;
 };
 
 export async function listTrades(event: H3Event, filters: TradeListFilters = {}) {
@@ -151,35 +140,57 @@ export async function listTrades(event: H3Event, filters: TradeListFilters = {})
       .from(tradeErrorTags)
       .innerJoin(tradingOptions, eq(tradingOptions.id, tradeErrorTags.optionId))
       .where(eq(tradingOptions.label, filters.errorTag));
-    if (!taggedTrades.length) return [];
-    conditions.push(inArray(trades.id, taggedTrades.map((row) => row.tradeId)));
+    if (!taggedTrades.length) {
+      return { trades: [], total: 0, page: 1, pageSize: 50, totalPages: 0 };
+    }
+    conditions.push(inArray(tradesTable.id, taggedTrades.map((row) => row.tradeId)));
   }
-  if (!filters.includeDeleted) conditions.push(isNull(trades.deletedAt));
-  if (filters.from) conditions.push(gte(trades.tradeDate, filters.from));
-  if (filters.to) conditions.push(lte(trades.tradeDate, filters.to));
-  if (filters.market) conditions.push(eq(trades.market, filters.market));
-  if (filters.status) conditions.push(eq(trades.status, filters.status));
-  if (filters.side) conditions.push(eq(trades.side, filters.side));
-  if (filters.strategy) conditions.push(eq(trades.strategy, filters.strategy));
-  if (filters.timeframe) conditions.push(eq(trades.timeframe, filters.timeframe));
-  if (filters.grade) conditions.push(eq(trades.executionGrade, filters.grade));
-  if (filters.emotion) conditions.push(eq(trades.emotion, filters.emotion));
-  if (filters.outcome) conditions.push(eq(trades.isWinning, filters.outcome === "win"));
+  if (!filters.includeDeleted) conditions.push(isNull(tradesTable.deletedAt));
+  if (filters.from) conditions.push(gte(tradesTable.tradeDate, filters.from));
+  if (filters.to) conditions.push(lte(tradesTable.tradeDate, filters.to));
+  if (filters.market) conditions.push(eq(tradesTable.market, filters.market));
+  if (filters.status) conditions.push(eq(tradesTable.status, filters.status));
+  if (filters.side) conditions.push(eq(tradesTable.side, filters.side));
+  if (filters.strategy) conditions.push(eq(tradesTable.strategy, filters.strategy));
+  if (filters.timeframe) conditions.push(eq(tradesTable.timeframe, filters.timeframe));
+  if (filters.grade) conditions.push(eq(tradesTable.executionGrade, filters.grade));
+  if (filters.emotion) conditions.push(eq(tradesTable.emotion, filters.emotion));
+  if (filters.outcome) conditions.push(eq(tradesTable.isWinning, filters.outcome === "win"));
   if (filters.query) {
     const search = `%${filters.query}%`;
-    conditions.push(or(ilike(trades.symbol, search), ilike(trades.instrumentCode, search))!);
+    conditions.push(or(ilike(tradesTable.symbol, search), ilike(tradesTable.instrumentCode, search))!);
   }
-  const rows = await db.select().from(trades)
+  
+  // 分页参数
+  const page = Math.max(filters.page ?? 1, 1);
+  const pageSize = Math.min(Math.max(filters.pageSize ?? 50, 1), 500);
+  const offset = (page - 1) * pageSize;
+  
+  // 查询总数
+  const totalResult = await db.$count(tradesTable, conditions.length ? and(...conditions) : undefined);
+  
+  // 查询数据
+  const rows = await db.select().from(tradesTable)
     .where(conditions.length ? and(...conditions) : undefined)
-    .orderBy(desc(trades.tradeDate), desc(trades.entryAt))
-    .limit(Math.min(Math.max(filters.limit ?? 250, 1), 1_000));
-  return hydrateTrades(event, rows);
+    .orderBy(desc(tradesTable.tradeDate), desc(tradesTable.entryAt))
+    .limit(pageSize)
+    .offset(offset);
+  
+  const hydratedTrades = await hydrateTrades(event, rows);
+  
+  return {
+    trades: hydratedTrades,
+    total: totalResult,
+    page,
+    pageSize,
+    totalPages: Math.ceil(totalResult / pageSize),
+  };
 }
 
 export async function getTrade(event: H3Event, id: string, includeDeleted = false) {
   const db = getTradingDb(event);
-  const rows = await db.select().from(trades)
-    .where(and(eq(trades.id, id), includeDeleted ? undefined : isNull(trades.deletedAt)))
+  const rows = await db.select().from(tradesTable)
+    .where(and(eq(tradesTable.id, id), includeDeleted ? undefined : isNull(tradesTable.deletedAt)))
     .limit(1);
   const hydrated = await hydrateTrades(event, rows);
   return hydrated[0] ?? null;
@@ -243,7 +254,7 @@ function tradeValues(input: TradeInput) {
 
 export async function createTrade(event: H3Event, input: TradeInput) {
   const db = getTradingDb(event);
-  const [row] = await db.insert(trades).values(tradeValues(input)).returning();
+  const [row] = await db.insert(tradesTable).values(tradeValues(input)).returning();
   if (!row) throw createError({ statusCode: 500, message: "创建交易失败" });
   await syncErrorTags(event, row.id, input.errorTags ?? []);
   return (await getTrade(event, row.id))!;
@@ -257,14 +268,14 @@ export async function updateTrade(event: H3Event, id: string, input: TradeInput)
   if (current.version !== input.version) {
     throw createError({ statusCode: 409, message: "记录已在其他页面更新，请重新加载" });
   }
-  const [row] = await db.update(trades)
+  const [row] = await db.update(tradesTable)
     .set({
       ...tradeValues(input),
-      version: sql`${trades.version} + 1`,
+      version: sql`${tradesTable.version} + 1`,
       updatedAt: new Date(),
     })
-    .where(and(eq(trades.id, id), eq(trades.version, input.version), isNull(trades.deletedAt)))
-    .returning({ id: trades.id });
+    .where(and(eq(tradesTable.id, id), eq(tradesTable.version, input.version), isNull(tradesTable.deletedAt)))
+    .returning({ id: tradesTable.id });
   if (!row) throw createError({ statusCode: 409, message: "记录已在其他页面更新，请重新加载" });
   await syncErrorTags(event, id, input.errorTags ?? []);
   return (await getTrade(event, id))!;
@@ -280,14 +291,14 @@ export async function softDeleteTrade(event: H3Event, id: string, version?: numb
   if (current.version !== version) {
     throw createError({ statusCode: 409, message: "记录已在其他页面更新，请重新加载" });
   }
-  const [row] = await db.update(trades)
+  const [row] = await db.update(tradesTable)
     .set({
       deletedAt: new Date(),
-      version: sql`${trades.version} + 1`,
+      version: sql`${tradesTable.version} + 1`,
       updatedAt: new Date(),
     })
-    .where(and(eq(trades.id, id), eq(trades.version, version), isNull(trades.deletedAt)))
-    .returning({ id: trades.id });
+    .where(and(eq(tradesTable.id, id), eq(tradesTable.version, version), isNull(tradesTable.deletedAt)))
+    .returning({ id: tradesTable.id });
   if (!row) throw createError({ statusCode: 409, message: "记录已在其他页面更新，请重新加载" });
   return { deleted: true, id };
 }
@@ -345,15 +356,15 @@ function distribution(items: TradeView[], values: (trade: TradeView) => string[]
 }
 
 export async function getDashboard(event: H3Event, from?: string, to?: string): Promise<TradingDashboard> {
-  const items = await listTrades(event, { from, to, limit: 1_000 });
+  const { trades } = await listTrades(event, { from, to, limit: 1_000 });
   const daily = new Map<string, { pnl: Decimal; count: number }>();
-  for (const trade of items.filter((item) => item.status === "closed")) {
+  for (const trade of trades.filter((item) => item.status === "closed")) {
     const current = daily.get(trade.tradeDate) ?? { pnl: new Decimal(0), count: 0 };
     current.pnl = current.pnl.plus(trade.pnlCny ?? 0);
     current.count += 1;
     daily.set(trade.tradeDate, current);
   }
-  const dates = [...new Set(items.map((trade) => trade.tradeDate))];
+  const dates = [...new Set(trades.map((trade) => trade.tradeDate))];
   const db = getTradingDb(event);
   const reviewedDates = dates.length
     ? (await db.select({ date: dailyReviews.reviewDate }).from(dailyReviews)
@@ -361,17 +372,17 @@ export async function getDashboard(event: H3Event, from?: string, to?: string): 
         .map((row) => row.date)
     : [];
   return {
-    metrics: aggregateMetrics(items),
+    metrics: aggregateMetrics(trades),
     dailyPnl: [...daily.entries()]
       .map(([date, value]) => ({ date, pnlCny: value.pnl.toDecimalPlaces(2).toString(), count: value.count }))
       .sort((left, right) => left.date.localeCompare(right.date)),
-    byMarket: breakdown(items, (trade) => trade.market === "crypto" ? "加密" : "A股"),
-    byStrategy: breakdown(items, (trade) => trade.strategy),
-    gradeDistribution: distribution(items, (trade) => trade.executionGrade ? [trade.executionGrade] : []),
-    emotionDistribution: distribution(items, (trade) => trade.emotion ? [trade.emotion] : []),
-    errorTagDistribution: distribution(items, (trade) => trade.errorTags ?? []),
-    openTrades: items.filter((trade) => trade.status === "open").slice(0, 10),
-    recentTrades: items.slice(0, 10),
+    byMarket: breakdown(trades, (trade) => trade.market === "crypto" ? "加密" : "A 股"),
+    byStrategy: breakdown(trades, (trade) => trade.strategy),
+    gradeDistribution: distribution(trades, (trade) => trade.executionGrade ? [trade.executionGrade] : []),
+    emotionDistribution: distribution(trades, (trade) => trade.emotion ? [trade.emotion] : []),
+    errorTagDistribution: distribution(trades, (trade) => trade.errorTags ?? []),
+    openTrades: trades.filter((trade) => trade.status === "open").slice(0, 10),
+    recentTrades: trades.slice(0, 10),
     pendingDailyReviews: dates.filter((date) => !reviewedDates.includes(date)).sort().reverse().slice(0, 14),
   };
 }
@@ -381,7 +392,7 @@ export async function getDailyReview(event: H3Event, reviewDate: string): Promis
   const [review] = await db.select().from(dailyReviews)
     .where(and(eq(dailyReviews.reviewDate, reviewDate), isNull(dailyReviews.deletedAt)))
     .limit(1);
-  const dayTrades = await listTrades(event, { from: reviewDate, to: reviewDate, limit: 250 });
+  const { trades: dayTrades } = await listTrades(event, { from: reviewDate, to: reviewDate, limit: 250 });
   const closedDayTrades = dayTrades.filter((trade) => trade.status === "closed");
   return {
     id: review?.id ?? "",
@@ -512,11 +523,24 @@ export async function insertAttachment(
   },
 ) {
   const db = getTradingDb(event);
+  
+  // 检查重复
+  const [duplicate] = await db.select().from(tradeAttachments)
+    .where(and(
+      eq(tradeAttachments.tradeId, input.tradeId),
+      eq(tradeAttachments.pathname, input.pathname),
+    ))
+    .limit(1);
+  if (duplicate) return attachmentView(duplicate);
+  
+  // 原子性检查：在插入前检查数量，插入后验证
   const existing = await db.select().from(tradeAttachments)
     .where(eq(tradeAttachments.tradeId, input.tradeId));
-  const duplicate = existing.find((attachment) => attachment.pathname === input.pathname);
-  if (duplicate) return attachmentView(duplicate);
-  if (existing.length >= 10) throw createError({ statusCode: 400, message: "每笔交易最多上传 10 张截图" });
+  
+  if (existing.length >= 10) {
+    throw createError({ statusCode: 400, message: "每笔交易最多上传 10 张截图" });
+  }
+  
   const [row] = await db.insert(tradeAttachments).values({
     ...input,
     width: input.width ?? null,
@@ -524,7 +548,19 @@ export async function insertAttachment(
     sortOrder: existing.length,
     isCover: existing.length === 0,
   }).onConflictDoNothing().returning();
-  if (row) return attachmentView(row);
+  
+  if (row) {
+    // 插入成功后再次验证总数（防止并发突破限制）
+    const finalCount = await db.$count(tradeAttachments, eq(tradeAttachments.tradeId, input.tradeId));
+    if (finalCount > 10) {
+      // 回滚刚才的插入
+      await db.delete(tradeAttachments).where(eq(tradeAttachments.id, row.id));
+      throw createError({ statusCode: 400, message: "每笔交易最多上传 10 张截图" });
+    }
+    return attachmentView(row);
+  }
+  
+  // 处理并发重复
   const [concurrentDuplicate] = await db.select().from(tradeAttachments)
     .where(and(
       eq(tradeAttachments.tradeId, input.tradeId),
@@ -569,5 +605,13 @@ export async function deleteAttachmentRecord(event: H3Event, tradeId: string, id
     .where(and(eq(tradeAttachments.id, id), eq(tradeAttachments.tradeId, tradeId)))
     .returning();
   if (!row) throw createError({ statusCode: 404, message: "未找到截图" });
+  
+  // 删除 Vercel Blob 中的文件
+  try {
+    await del(row.pathname);
+  } catch (error) {
+    console.error(`Failed to delete blob ${row.pathname}:`, error);
+  }
+  
   return row;
 }

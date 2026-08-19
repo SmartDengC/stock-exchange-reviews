@@ -13,6 +13,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -61,6 +62,8 @@ export const trades = pgTable("trades", {
   index("trades_trade_date_idx").on(table.tradeDate),
   index("trades_market_idx").on(table.market),
   index("trades_status_idx").on(table.status),
+  // 复合索引：优化按日期和开仓时间排序的查询
+  index("trades_date_entry_idx").on(sql`trade_date DESC, entry_at DESC`),
   uniqueIndex("trades_source_row_uidx").on(table.sourceFileHash, table.sourceRow),
 ]);
 

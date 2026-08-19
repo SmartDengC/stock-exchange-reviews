@@ -8,6 +8,7 @@ import {
   ref,
   watch,
 } from "vue";
+import { errorMessage } from "~/lib/trading";
 import { onBeforeRouteLeave } from "vue-router";
 import { useAdminSessionTimeout } from "~/composables/use-admin-session-timeout";
 import { useTheme } from "~/composables/use-theme";
@@ -71,22 +72,6 @@ const editorToolbars = [
   "pageFullscreen",
   "fullscreen",
 ] as const;
-
-function errorMessage(error: unknown) {
-  if (error && typeof error === "object") {
-    const payload = "data" in error ? error.data : null;
-    if (payload && typeof payload === "object") {
-      if ("message" in payload && typeof payload.message === "string") {
-        return payload.message;
-      }
-      if ("statusMessage" in payload && typeof payload.statusMessage === "string") {
-        return payload.statusMessage;
-      }
-    }
-    if ("message" in error && typeof error.message === "string") return error.message;
-  }
-  return "操作失败，请稍后重试";
-}
 
 function errorStatusCode(error: unknown) {
   if (!error || typeof error !== "object") return null;

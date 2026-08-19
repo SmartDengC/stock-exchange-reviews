@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { and, asc, gte, isNull, lte } from "drizzle-orm";
 import { dailyReviews } from "../../../db/schema";
 import { getRequestURL, send, setResponseHeader } from "h3";
+import { marketLabel, sideLabel, basisLabel, statusLabel } from "~~/shared/labels";
 import { requireActiveAdminSession } from "../../utils/review-api";
 import { getTradingDb } from "../../utils/trading-db";
 import { listTrades } from "../../utils/trading-repository";
@@ -9,26 +10,11 @@ import { listTrades } from "../../utils/trading-repository";
 const headers = [
   "日期", "合约/证券代码", "标的", "市场", "方向", "策略类型", "周期", "开仓时间", "平仓时间",
   "持仓分钟", "入场理由", "出场理由", "开仓价", "平仓价", "仓位/名义金额", "仓位口径",
-  "结算币种", "计划风险金额", "手续费税费", "毛盈亏", "净盈亏", "净盈亏（元）", "盈亏R倍",
+  "结算币种", "计划风险金额", "手续费税费", "毛盈亏", "净盈亏", "净盈亏（元）", "盈亏 R 倍",
   "是否盈利", "执行评分", "情绪状态", "错误标签", "错误复盘", "做对了什么", "下次改进", "当天交易总结",
   "截图链接", "状态", "逐笔人民币汇率",
 ];
 
-function marketLabel(value: string) {
-  return value === "crypto" ? "加密" : "A股";
-}
-
-function sideLabel(value: string) {
-  return value === "long" ? "做多" : "做空";
-}
-
-function basisLabel(value: string) {
-  return value === "quantity" ? "数量" : "金额";
-}
-
-function statusLabel(value: string) {
-  return value === "closed" ? "已平仓" : "未平仓";
-}
 
 export default defineEventHandler(async (event) => {
   await requireActiveAdminSession(event);
@@ -38,12 +24,13 @@ export default defineEventHandler(async (event) => {
   const reviewConditions = [isNull(dailyReviews.deletedAt)];
   if (from) reviewConditions.push(gte(dailyReviews.reviewDate, from));
   if (to) reviewConditions.push(lte(dailyReviews.reviewDate, to));
-  const [items, reviewRows] = await Promise.all([
-    listTrades(event, { from, to, limit: 1_000 }),
+  const [tradesResult, reviewRows] = await Promise.all([
+    listTrades(event, { from, to, pageSize: 1_000 }),
     getTradingDb(event).select().from(dailyReviews)
       .where(and(...reviewConditions))
       .orderBy(asc(dailyReviews.reviewDate)),
   ]);
+  const items = tradesResult.trades;
   const reviewByDate = new Map(reviewRows.map((review) => [review.reviewDate, review]));
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "市场日记 · 私有交易复盘系统";

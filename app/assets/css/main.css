@@ -2,39 +2,50 @@
 
 :root {
   color-scheme: light;
-  --bg: #f5f6f8;
+  --bg: #fafbfc;
   --surface: #ffffff;
-  --surface-soft: #f0f4f7;
-  --surface-blue: #eef4ff;
-  --text: #202733;
-  --muted: #6b7280;
-  --border: #d9dee6;
-  --primary: #2563eb;
-  --primary-soft: #e8f0ff;
-  --positive: #c64949;
-  --negative: #118a74;
-  --neutral: #95631b;
-  --shadow: 0 16px 32px rgb(31 41 55 / 8%);
-  --shadow-soft: 0 8px 22px rgb(31 41 55 / 5%);
-  --radius: 8px;
+  --surface-soft: #f3f5f7;
+  --surface-blue: #ecf3ff;
+  --text: #1a1f2c;
+  --text-soft: #3a4252;
+  --muted: #6c7585;
+  --border: #e4e8ed;
+  --primary: #1a56db;
+  --primary-soft: #dbe4ff;
+  --positive: #d32f2f;
+  --negative: #00897b;
+  --neutral: #b8860b;
+  --accent: #7c3aed;
+  --accent-soft: #ede9fe;
+  --shadow: 0 8px 24px rgb(0 0 0 / 6%);
+  --shadow-soft: 0 4px 12px rgb(0 0 0 / 4%);
+  --shadow-deep: 0 20px 48px rgb(0 0 0 / 10%);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html.dark {
   color-scheme: dark;
-  --bg: #0f141b;
-  --surface: #171e27;
-  --surface-soft: #1e2834;
-  --surface-blue: #182743;
-  --text: #e7edf5;
-  --muted: #9aa7b7;
-  --border: #2c3948;
-  --primary: #5b8ff9;
-  --primary-soft: #1c3158;
-  --positive: #ef7777;
-  --negative: #46bba4;
-  --neutral: #d5a34f;
-  --shadow: 0 16px 34px rgb(0 0 0 / 24%);
-  --shadow-soft: 0 8px 22px rgb(0 0 0 / 16%);
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-soft: #1c2128;
+  --surface-blue: #162032;
+  --text: #e6edf3;
+  --text-soft: #b0b7c1;
+  --muted: #8b949e;
+  --border: #30363d;
+  --primary: #58a6ff;
+  --primary-soft: #162538;
+  --positive: #f85149;
+  --negative: #3fb950;
+  --neutral: #d29922;
+  --accent: #a78bfa;
+  --accent-soft: #2d2240;
+  --shadow: 0 8px 28px rgb(0 0 0 / 32%);
+  --shadow-soft: 0 4px 14px rgb(0 0 0 / 24%);
+  --shadow-deep: 0 24px 56px rgb(0 0 0 / 40%);
 }
 
 * { box-sizing: border-box; }
@@ -45,7 +56,10 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 14px/1.55 var(--font-sans);
+  font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -72,11 +86,11 @@ footer {
   gap: 14px;
 }
 
-.topbar { align-items: flex-start; margin-bottom: 14px; }
-.topbar h1 { margin: 1px 0 2px; font-size: 22px; font-weight: 600; letter-spacing: 0; }
-.site-brand { color: var(--muted); font-size: 12px; font-weight: 600; }
-.meta-line { margin: 0; color: var(--muted); font-size: 12px; }
-.topbar-actions { flex-wrap: wrap; justify-content: flex-end; }
+.topbar { align-items: flex-start; margin-bottom: 20px; }
+.topbar h1 { margin: 2px 0 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.site-brand { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+.meta-line { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.topbar-actions { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
 .trading-rules-panel {
   overflow: hidden;
@@ -183,8 +197,8 @@ footer {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 270px minmax(540px, 1fr) minmax(420px, 520px);
-  gap: 12px;
+  grid-template-columns: 260px minmax(560px, 1fr) minmax(440px, 540px);
+  gap: 16px;
   align-items: start;
 }
 

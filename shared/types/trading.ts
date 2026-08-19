@@ -139,3 +139,29 @@ export type TradingOptionsResponse = {
   options: TradingOption[];
   settings: TradingSettings;
 };
+
+export type TradeListResponse = {
+  trades: TradeView[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type TradeListFilters = {
+  from?: string;
+  to?: string;
+  market?: string;
+  status?: string;
+  side?: string;
+  strategy?: string;
+  timeframe?: string;
+  grade?: string;
+  emotion?: string;
+  errorTag?: string;
+  query?: string;
+  outcome?: "win" | "loss";
+  page?: number;
+  pageSize?: number;
+  limit?: number;
+};

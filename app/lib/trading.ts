@@ -1,4 +1,5 @@
 import type { TradeInput, TradeView } from "~~/shared/types/trading";
+import { marketLabel as sharedMarketLabel, sideLabel as sharedSideLabel, statusLabel as sharedStatusLabel } from "~~/shared/labels";
 
 export function formatMoney(value: string | number | null | undefined, currency = "CNY") {
   if (value === null || value === undefined || value === "") return "—";
@@ -20,15 +21,15 @@ export function formatNumber(value: string | number | null | undefined, digits =
 }
 
 export function marketLabel(value: TradeView["market"]) {
-  return value === "crypto" ? "加密" : "A股";
+  return sharedMarketLabel(value);
 }
 
 export function sideLabel(value: TradeView["side"]) {
-  return value === "long" ? "做多" : "做空";
+  return sharedSideLabel(value);
 }
 
 export function statusLabel(value: TradeView["status"]) {
-  return value === "closed" ? "已平仓" : "未平仓";
+  return sharedStatusLabel(value);
 }
 
 export function errorMessage(error: unknown) {
@@ -60,7 +61,7 @@ export function blankTrade(defaultRate = "7.2"): TradeInput {
     market: "crypto",
     side: "long",
     strategy: "趋势突破",
-    timeframe: "5分",
+    timeframe: "5 分",
     entryAt: now.toISOString(),
     exitAt: now.toISOString(),
     entryReason: "",

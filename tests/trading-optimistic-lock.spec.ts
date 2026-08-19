@@ -105,6 +105,7 @@ function fakeDb(initial: {
   };
 
   const db = {
+    $count: async () => 0,
     select() {
       return {
         from(table: unknown) {
@@ -114,7 +115,7 @@ function fakeDb(initial: {
                 const rows = state.trade && !state.trade.deletedAt ? [state.trade] : [];
                 return {
                   limit: async () => rows,
-                  orderBy: () => ({ limit: async () => rows }),
+                  orderBy: () => ({ limit: () => ({ offset: async () => rows }) }),
                 };
               },
             };

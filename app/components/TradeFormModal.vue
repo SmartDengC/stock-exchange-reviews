@@ -27,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const saving = ref(false);
+const loadingOptions = ref(false); // 加载选项时的状态
 const error = ref("");
 const queuedFiles = ref<File[]>([]);
 const options = ref<TradingOptionsResponse | null>(null);
@@ -130,7 +131,14 @@ watch(() => form.settlementCurrency, (currency) => {
 watch(() => props.open, async (open) => {
   if (!open) return;
   if (!options.value) {
-    options.value = await $fetch<TradingOptionsResponse>("/api/trading/options").catch(() => null);
+    loadingOptions.value = true;
+    try {
+      options.value = await $fetch<TradingOptionsResponse>("/api/trading/options");
+    } catch (e) {
+      console.error("加载交易选项失败:", e);
+    } finally {
+      loadingOptions.value = false;
+    }
   }
   resetForm();
 }, { immediate: true });
@@ -240,12 +248,17 @@ async function save() {
 
           <form class="trade-form-body" @submit.prevent="save">
             <div class="trade-form-main">
-              <section class="trade-form-section">
+              <!-- 加载选项时的提示 -->
+              <div v-if="loadingOptions" class="trade-form-loading">
+                <p>正在加载交易选项...</p>
+              </div>
+              
+              <section class="trade-form-section" v-else>
                 <div class="trade-section-title"><span>01</span><h3>基本信息</h3></div>
                 <div class="trade-form-grid">
                   <label>交易状态<select v-model="form.status"><option value="closed">已平仓</option><option value="open">未平仓</option></select></label>
                   <label>交易日期<input v-model="form.tradeDate" type="date" required></label>
-                  <label>市场<select v-model="form.market"><option value="crypto">加密</option><option value="a_share">A股</option></select></label>
+                  <label>市场<select v-model="form.market"><option value="crypto">加密</option><option value="a_share">A 股</option></select></label>
                   <label>方向<select v-model="form.side"><option value="long">做多</option><option value="short">做空</option></select></label>
                   <label>合约/证券代码<input v-model="form.instrumentCode" list="trade-instrument-codes" placeholder="MUUSDT / 159316"><datalist id="trade-instrument-codes"><option v-for="item in instrumentCodes" :key="item.id" :value="item.label" /></datalist></label>
                   <label>标的<input v-model="form.symbol" list="trade-symbols" required placeholder="标的名称"><datalist id="trade-symbols"><option v-for="item in symbols" :key="item.id" :value="item.label" /></datalist></label>
