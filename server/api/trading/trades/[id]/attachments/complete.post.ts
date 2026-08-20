@@ -1,6 +1,6 @@
 import { head } from "@vercel/blob";
 import { getRouterParam, readBody } from "h3";
-import { assertSameOrigin } from "../../../../../utils/review-api";
+import { assertSameOrigin } from "../../../../../utils/assert-same-origin";
 import {
   TradingAttachmentValidationError,
   validateAttachmentCompletion,

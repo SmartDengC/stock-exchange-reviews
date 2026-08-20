@@ -1,5 +1,3 @@
-import { generatedReviews } from "./generated-reviews";
-
 export type Table = { headers: string[]; rows: string[][] };
 
 export type ReviewRecord = {
@@ -39,40 +37,6 @@ export function parseTables(markdown: string): Table[] {
     if (headers.length > 1 && rows.length) tables.push({ headers, rows });
   }
   return tables;
-}
-
-function recordFromPath(path: string, raw: string): ReviewRecord | null {
-  const weeklyMatch = path.match(/reviews\/weekly\/(\d{4}-W\d{2})\.md$/);
-  const dailyMatch = path.match(/reviews\/(\d{4}-\d{2}-\d{2})\.md$/);
-  const isWeekly = Boolean(weeklyMatch);
-  const slug = weeklyMatch?.[1] ?? dailyMatch?.[1];
-  if (!slug) return null;
-  const title = raw.match(/^#{1,4}\s+(.+)$/m)?.[1]?.replace(/^📊\s*/, "") ?? slug;
-  const date = raw.match(/\*\*时间范围：\*\*\s*([^\n]+)/)?.[1]
-    ?? raw.match(/\*\*报告日期：\*\*\s*([^\n]+)/)?.[1]
-    ?? title.match(/\d{4}年\d{1,2}月\d{1,2}日[^\n]*/)?.[0]
-    ?? slug;
-  return { slug, kind: isWeekly ? "weekly" : "daily", title, dateLabel: date, raw, tables: parseTables(raw) };
-}
-
-export const reviews = Object.entries(generatedReviews)
-  .map(([path, raw]) => recordFromPath(path, raw))
-  .filter((review): review is ReviewRecord => review !== null)
-  .sort((left, right) => right.slug.localeCompare(left.slug));
-
-export const weeklyReviews = reviews.filter((review) => review.kind === "weekly");
-export const dailyReviews = reviews.filter((review) => review.kind === "daily");
-
-export function getLatestWeeklyReview() {
-  return weeklyReviews[0] ?? null;
-}
-
-export function getReview(kind: ReviewRecord["kind"], slug: string) {
-  return reviews.find((review) => review.kind === kind && review.slug === slug) ?? null;
-}
-
-export function reviewRoute(review: Pick<ReviewRecord, "kind" | "slug">) {
-  return `/report/${review.kind}/${review.slug}`;
 }
 
 export function section(markdown: string, heading: string) {

@@ -14,7 +14,7 @@ useSeoMeta({
 onMounted(async () => {
   await refreshSession().catch(() => undefined);
   if (loggedIn.value) {
-    await navigateTo(String(route.query.returnTo || "/"));
+    await navigateTo(String(route.query.returnTo || "/research/rules"));
   }
 });
 
@@ -28,7 +28,7 @@ async function login() {
       body: { username: username.value, password: password.value },
     });
     await refreshSession();
-    await navigateTo(String(route.query.returnTo || "/"));
+    await navigateTo(String(route.query.returnTo || "/research/rules"));
   } catch (cause) {
     const value = cause as { data?: { message?: string }; message?: string };
     error.value = value.data?.message ?? value.message ?? "登录失败";

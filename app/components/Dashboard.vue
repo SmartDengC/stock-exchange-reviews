@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import {
   changeTone,
-  dailyReviews,
   findRow,
   firstTable,
   tableForHeading,
-  weeklyReviews,
   type ReviewRecord,
 } from "~/lib/reviews";
-import { tradingRules } from "~/lib/trading-rules";
 
 type Asset = {
   label: string;
@@ -128,48 +125,6 @@ const driverCards = [
           <button type="button" class="source-citation overlay-trigger" @click="openReview(review)">
             引用来源：{{ review.slug }}《本周核心驱动框架》 <span>阅读原文 ↗</span>
           </button>
-        </section>
-
-        <section class="home-rules-section" aria-label="交易纪律规则">
-          <TradingRulesPanel :document="tradingRules" />
-        </section>
-
-        <section id="weekly-reviews" class="research-archive-section panel" aria-label="周复盘归档">
-          <PanelHeader eyebrow="RESEARCH ARCHIVE" title="周复盘归档">
-            <span class="archive-count">{{ weeklyReviews.length }} 篇</span>
-          </PanelHeader>
-          <div class="research-archive-grid">
-            <button
-              v-for="item in weeklyReviews"
-              :key="item.slug"
-              type="button"
-              :class="{ active: selectedReview ? selectedReview.kind === item.kind && selectedReview.slug === item.slug : item.slug === review.slug }"
-              @click="openReview(item)"
-            >
-              <span>{{ item.slug }}</span>
-              <b>{{ item.title.replace(/^\d{4}年第\d+周\s*/, "") }}</b>
-              <small>{{ item.dateLabel }}</small>
-            </button>
-          </div>
-        </section>
-
-        <section id="daily-reviews" class="research-archive-section panel" aria-label="日复盘归档">
-          <PanelHeader eyebrow="DAILY NOTES" title="日复盘归档">
-            <span class="archive-count">{{ dailyReviews.length }} 篇</span>
-          </PanelHeader>
-          <div class="research-archive-grid daily">
-            <button
-              v-for="item in dailyReviews"
-              :key="item.slug"
-              type="button"
-              :class="{ active: selectedReview?.kind === item.kind && selectedReview.slug === item.slug }"
-              @click="openReview(item)"
-            >
-              <span>{{ item.slug }}</span>
-              <b>{{ item.title.replace(/^\d{4}年/, "") }}</b>
-              <small>{{ item.dateLabel }}</small>
-            </button>
-          </div>
         </section>
       </section>
     </section>

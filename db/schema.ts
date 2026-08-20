@@ -20,6 +20,21 @@ const timestamps = {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 };
 
+export const researchReviews = pgTable("research_reviews", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  kind: varchar("kind", { length: 8 }).notNull(),
+  slug: varchar("slug", { length: 20 }).notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  dateLabel: varchar("date_label", { length: 80 }).notNull(),
+  content: text("content").notNull(),
+  version: integer("version").notNull().default(1),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  ...timestamps,
+}, (table) => [
+  uniqueIndex("research_reviews_kind_slug_uidx").on(table.kind, table.slug),
+  index("research_reviews_kind_date_idx").on(table.kind, table.dateLabel),
+]);
+
 export const trades = pgTable("trades", {
   id: uuid("id").primaryKey().defaultRandom(),
   status: varchar("status", { length: 16 }).notNull(),

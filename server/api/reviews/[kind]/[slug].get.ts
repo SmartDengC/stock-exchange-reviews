@@ -1,17 +1,13 @@
 import { getRouterParams } from "h3";
-import {
-  getRepositoryConfig,
-  throwReviewApiError,
-} from "../../../utils/review-api";
-import { readGitHubReview, resolveReviewPath } from "../../../utils/review-storage";
+import { getResearchReview } from "../../../utils/review-repository";
 
 export default defineEventHandler(async (event) => {
   const { kind = "", slug = "" } = getRouterParams(event);
+  const review = await getResearchReview(event, kind, slug);
 
-  try {
-    const path = resolveReviewPath(kind, slug);
-    return await readGitHubReview(getRepositoryConfig(event), path);
-  } catch (error) {
-    throwReviewApiError(error);
+  if (!review) {
+    throw createError({ statusCode: 404, message: "未找到这份复盘" });
   }
+
+  return review;
 });

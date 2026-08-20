@@ -1,7 +1,4 @@
 import tailwindcss from "@tailwindcss/vite";
-import { reviewRoute, reviews } from "./app/lib/reviews";
-
-const reportRoutes = reviews.map(reviewRoute);
 
 export default defineNuxtConfig({
   compatibilityDate: "2026-07-22",
@@ -21,7 +18,7 @@ export default defineNuxtConfig({
   nitro: {
     prerender: {
       crawlLinks: true,
-      routes: ["/", ...reportRoutes],
+      routes: ["/"],
     },
   },
   routeRules: {

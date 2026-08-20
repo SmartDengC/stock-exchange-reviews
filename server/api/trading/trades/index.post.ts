@@ -1,5 +1,5 @@
 import { readBody } from "h3";
-import { assertSameOrigin } from "../../../utils/review-api";
+import { assertSameOrigin } from "../../../utils/assert-same-origin";
 import { createTrade } from "../../../utils/trading-repository";
 import { throwTradingError, validateTradeInput } from "../../../utils/trading-validation";
 

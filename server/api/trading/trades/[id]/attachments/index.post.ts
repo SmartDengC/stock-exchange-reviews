@@ -1,6 +1,6 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { getRouterParam, readBody } from "h3";
-import { assertSameOrigin } from "../../../../../utils/review-api";
+import { assertSameOrigin } from "../../../../../utils/assert-same-origin";
 import { getTrade } from "../../../../../utils/trading-repository";
 
 type UploadPayload = {

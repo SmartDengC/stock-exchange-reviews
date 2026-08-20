@@ -1,5 +1,5 @@
 import { getQuery, getRouterParam } from "h3";
-import { assertSameOrigin } from "../../../utils/review-api";
+import { assertSameOrigin } from "../../../utils/assert-same-origin";
 import { softDeleteTrade } from "../../../utils/trading-repository";
 
 export default defineEventHandler(async (event) => {

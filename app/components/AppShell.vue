@@ -23,8 +23,10 @@ const today = new Intl.DateTimeFormat("en-CA", {
 }).format(new Date());
 
 const researchLinks = [
-  { to: "/#weekly-reviews", label: "周复盘", match: "weekly", icon: "weekly" },
-  { to: "/#daily-reviews", label: "日复盘", match: "daily", icon: "daily" },
+  { to: "/research/rules", label: "交易规则", match: "rules", icon: "rules" },
+  { to: "/", label: "复盘总览", match: "overview", icon: "overview" },
+  { to: "/research/weekly", label: "周复盘", match: "weekly", icon: "weekly" },
+  { to: "/research/daily", label: "日复盘", match: "daily", icon: "daily" },
 ];
 
 const tradingLinks = [
@@ -65,10 +67,11 @@ function openSettings() {
 }
 
 function researchActive(match: string) {
-  if (route.path.startsWith("/report/weekly")) return match === "weekly";
-  if (route.path.startsWith("/report/daily")) return match === "daily";
-  if (route.path !== "/") return false;
-  return match === "daily" ? route.hash === "#daily-reviews" : route.hash !== "#daily-reviews";
+  if (match === "rules") return route.path.startsWith("/research/rules");
+  if (match === "overview") return route.path === "/";
+  if (match === "weekly") return route.path.startsWith("/research/weekly") || route.path.startsWith("/report/weekly");
+  if (match === "daily") return route.path.startsWith("/research/daily") || route.path.startsWith("/report/daily");
+  return false;
 }
 
 function tradingActive(link: { to: string; base?: string }) {
