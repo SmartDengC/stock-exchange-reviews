@@ -29,5 +29,5 @@ export function useTheme() {
     applyTheme(theme.value === "light" ? "dark" : "light");
   }
 
-  return { theme: readonly(theme), toggleTheme };
+  return { theme: readonly(theme), setTheme: applyTheme, toggleTheme };
 }
