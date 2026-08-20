@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { useUserSession } from "#imports";
 import {
   changeTone,
   dailyReviews,
   findRow,
   firstTable,
-  section,
-  stripMarkdown,
   tableForHeading,
   weeklyReviews,
   type ReviewRecord,
@@ -24,16 +21,9 @@ type Asset = {
 
 const props = defineProps<{ review: ReviewRecord }>();
 const selectedReview = ref<ReviewRecord | null>(null);
-const { fetch: refreshSession } = useUserSession();
 
 function openReview(review: ReviewRecord) {
   selectedReview.value = review;
-}
-
-async function logout() {
-  await $fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-  await refreshSession();
-  await navigateTo("/login");
 }
 
 function assetFrom(table: ReturnType<typeof firstTable>, name: string, label: string, market: string): Asset {
@@ -73,9 +63,6 @@ const assets = computed<Asset[]>(() => [
 
 const strongest = computed(() => tableForHeading(props.review.raw, "周度最强"));
 const weakest = computed(() => tableForHeading(props.review.raw, "周度最惨"));
-const timeline = computed(() => firstTable(props.review.raw, "关键宏观事件时间线"));
-const scenarios = computed(() => firstTable(props.review.raw, "情景推演"));
-const summary = computed(() => section(props.review.raw, "一句话周总结").match(/>\s*(.+)/)?.[1] ?? "本周市场复盘已归档。");
 
 const driverCards = [
   { step: "01", tag: "外部冲击", title: "能源冲击抬升风险溢价", text: "地缘局势通过油价、通胀预期与利率路径传导，压制全球风险资产。", tone: "negative" },
@@ -86,52 +73,8 @@ const driverCards = [
 </script>
 
 <template>
-  <main id="main-content" class="app-shell">
-    <header class="topbar">
-      <div>
-        <div class="site-brand">市场日记 · 个人研究资料库</div>
-        <h1>周度研究终端</h1>
-        <p class="meta-line">最新资料 {{ review.slug }} · {{ review.dateLabel }}</p>
-      </div>
-        <div class="topbar-actions">
-          <ThemeToggle />
-          <a class="github-link" href="https://github.com/SmartDengC/stock-exchange-reviews" target="_blank" rel="noopener noreferrer" aria-label="GitHub 仓库">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.05-.015-2.055-3.33.72-4.035-1.605-4.035-1.605-.54-1.38-1.32-1.755-1.32-1.755-1.08-.75.09-.735.09-.735 1.2.075 1.83 1.23 1.83 1.23 1.065 1.815 2.805 1.29 3.495.99.105-.78.42-1.29.765-1.59-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405 1.02 0 2.04.135 3 .405 2.28-1.56 3.285-1.23 3.285-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.285 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-            </svg>
-          </a>
-          <NuxtLink class="secondary-link" to="/trading">交易复盘</NuxtLink>
-          <button type="button" class="secondary-link" @click="logout">退出登录</button>
-        </div>
-    </header>
-
+  <AppShell module="research" title="周度研究终端" :subtitle="`最新资料 ${review.slug} · ${review.dateLabel}`">
     <section class="dashboard-grid">
-      <aside class="archive-rail" aria-label="复盘资料导航">
-        <div id="archives" class="archive-list">
-          <p class="rail-label">周度回顾</p>
-          <button
-            v-for="item in weeklyReviews"
-            :key="item.slug"
-            type="button"
-            :class="{ active: selectedReview ? selectedReview.kind === item.kind && selectedReview.slug === item.slug : item.slug === review.slug }"
-            @click="openReview(item)"
-          >
-            <span>{{ item.slug }}</span><b>{{ item.title.replace(/^\d{4}年第\d+周\s*/, "") }}</b>
-          </button>
-
-          <p class="rail-label daily-label">日度复盘</p>
-          <button
-            v-for="item in dailyReviews"
-            :key="item.slug"
-            type="button"
-            :class="{ active: selectedReview?.kind === item.kind && selectedReview.slug === item.slug }"
-            @click="openReview(item)"
-          >
-            <span>{{ item.slug }}</span><b>{{ item.title.replace(/^\d{4}年/, "") }}</b>
-          </button>
-        </div>
-      </aside>
-
       <section class="main-stage">
         <section id="overview" class="summary-grid" aria-label="最新市场摘要">
           <article class="summary-item">
@@ -187,50 +130,49 @@ const driverCards = [
           </button>
         </section>
 
-        <section id="outlook" class="panel outlook-panel">
-          <PanelHeader eyebrow="FORWARD VIEW" title="下周情景推演" />
-          <div class="scenario-grid">
-            <article v-for="row in scenarios?.rows" :key="row[0]" :class="`scenario-card tone-${changeTone(row[0])}`">
-              <span>{{ row[0] }}</span><b>{{ row[2] }}</b><p>{{ row[1] }}</p><small>{{ row[3] }}</small>
-            </article>
-            <p v-if="!scenarios" class="empty-copy">暂无情景数据</p>
+        <section class="home-rules-section" aria-label="交易纪律规则">
+          <TradingRulesPanel :document="tradingRules" />
+        </section>
+
+        <section id="weekly-reviews" class="research-archive-section panel" aria-label="周复盘归档">
+          <PanelHeader eyebrow="RESEARCH ARCHIVE" title="周复盘归档">
+            <span class="archive-count">{{ weeklyReviews.length }} 篇</span>
+          </PanelHeader>
+          <div class="research-archive-grid">
+            <button
+              v-for="item in weeklyReviews"
+              :key="item.slug"
+              type="button"
+              :class="{ active: selectedReview ? selectedReview.kind === item.kind && selectedReview.slug === item.slug : item.slug === review.slug }"
+              @click="openReview(item)"
+            >
+              <span>{{ item.slug }}</span>
+              <b>{{ item.title.replace(/^\d{4}年第\d+周\s*/, "") }}</b>
+              <small>{{ item.dateLabel }}</small>
+            </button>
+          </div>
+        </section>
+
+        <section id="daily-reviews" class="research-archive-section panel" aria-label="日复盘归档">
+          <PanelHeader eyebrow="DAILY NOTES" title="日复盘归档">
+            <span class="archive-count">{{ dailyReviews.length }} 篇</span>
+          </PanelHeader>
+          <div class="research-archive-grid daily">
+            <button
+              v-for="item in dailyReviews"
+              :key="item.slug"
+              type="button"
+              :class="{ active: selectedReview?.kind === item.kind && selectedReview.slug === item.slug }"
+              @click="openReview(item)"
+            >
+              <span>{{ item.slug }}</span>
+              <b>{{ item.title.replace(/^\d{4}年/, "") }}</b>
+              <small>{{ item.dateLabel }}</small>
+            </button>
           </div>
         </section>
       </section>
-
-      <div class="right-rail">
-        <aside class="insight-panel" aria-label="本周趋势与事件">
-          <PanelHeader eyebrow="WEEKLY SIGNAL" title="本周观察" />
-          <section class="temperature-box">
-            <span>风险温度</span><strong>18<small>/100</small></strong>
-            <div class="temperature-scale"><i class="active" /><i /><i /><i /><i /></div>
-            <p>市场处于风险规避区间，防御资产相对占优。</p>
-          </section>
-
-          <section class="signal-summary">
-            <span>核心判断</span>
-            <p>{{ stripMarkdown(summary) }}</p>
-          </section>
-
-          <section class="timeline-section">
-            <div class="subsection-head"><h3>关键事件时间线</h3><span>MACRO CLOCK</span></div>
-            <ol v-if="timeline" class="timeline">
-              <li v-for="row in timeline.rows.slice(0, 8)" :key="`${row[0]}-${row[1]}`">
-                <time>{{ row[0] }}</time>
-                <div><b>{{ row[1] }}</b><p :class="`tone-${changeTone(row[2])}`">{{ row[2] }}</p></div>
-              </li>
-            </ol>
-            <p v-else class="empty-copy">暂无时间线数据</p>
-          </section>
-
-          <button type="button" class="insight-link overlay-trigger" @click="openReview(review)">查看全部研究记录 <span>→</span></button>
-        </aside>
-
-        <TradingRulesPanel :document="tradingRules" />
-      </div>
     </section>
-
-    <footer>本系统仅用于个人研究与历史复盘，不构成任何投资建议。<span>MARKET DIARY · BUILD-TIME RESEARCH SYSTEM</span></footer>
     <ReviewOverlay :review="selectedReview" @close="selectedReview = null" />
-  </main>
+  </AppShell>
 </template>

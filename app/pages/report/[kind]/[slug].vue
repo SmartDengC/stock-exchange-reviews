@@ -19,13 +19,12 @@ useSeoMeta({
 </script>
 
 <template>
-  <main id="main-content" class="report-page">
-    <header class="report-topbar">
-      <NuxtLink class="brand" to="/"><span class="brand-mark">M</span><span>市场日记<small>MARKET DIARY</small></span></NuxtLink>
-      <div class="topbar-actions"><ThemeToggle /><NuxtLink class="secondary-link" to="/#archives">返回归档 ←</NuxtLink></div>
-    </header>
+  <AppShell module="research" :title="record.title" :subtitle="record.dateLabel">
+    <template #actions>
+      <NuxtLink class="secondary-link" to="/#archives">返回归档</NuxtLink>
+    </template>
 
-    <article class="report-surface">
+    <article class="report-page report-surface">
       <section class="report-hero">
         <span class="eyebrow">{{ record.kind === "weekly" ? "WEEKLY REVIEW" : "DAILY REVIEW" }} / {{ record.slug }}</span>
         <h1>{{ record.title }}</h1>
@@ -33,7 +32,5 @@ useSeoMeta({
       </section>
       <ReviewDocumentEditor :review="record" />
     </article>
-
-    <footer>本系统仅用于个人研究与历史复盘，不构成任何投资建议。<span>市场日记 · BUILD-TIME RESEARCH SYSTEM</span></footer>
-  </main>
+  </AppShell>
 </template>

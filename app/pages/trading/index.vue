@@ -13,7 +13,9 @@ const selectedTrade = ref<TradeView | null>(null);
 const editingTrade = ref<TradeView | null>(null);
 const cloneSource = ref<TradeView | null>(null);
 
-const { data, pending, error, refresh } = await useFetch<TradingDashboard>("/api/trading/dashboard", {
+const { data, pending, error, refresh } = useFetch<TradingDashboard>("/api/trading/dashboard", {
+  lazy: true,
+  server: false,
   query: computed(() => ({ from: from.value || undefined, to: to.value || undefined })),
 });
 
@@ -84,7 +86,7 @@ async function reloadData() {
       <span>统计仅纳入已平仓交易</span>
     </section>
 
-    <div v-if="pending" class="trading-loading">正在载入交易数据…</div>
+    <div v-if="pending || (!data && !error)" class="trading-loading">正在载入交易数据…</div>
     <div v-else-if="error" class="trading-error">{{ error.message || "交易数据库暂不可用" }}</div>
     <template v-else-if="data">
       <section class="trading-kpi-grid">

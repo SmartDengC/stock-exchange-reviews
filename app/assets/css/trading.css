@@ -4,8 +4,8 @@
   min-height: 100vh;
   grid-template-columns: var(--trade-sidebar) minmax(0, 1fr);
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--border) 32%, transparent) 1px, transparent 1px) 0 0 / 32px 32px,
-    linear-gradient(color-mix(in srgb, var(--border) 25%, transparent) 1px, transparent 1px) 0 0 / 32px 32px,
+    radial-gradient(circle at 78% 0%, color-mix(in srgb, var(--primary) 9%, transparent), transparent 28rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 38%, transparent), transparent 22rem),
     var(--bg);
 }
 
@@ -597,9 +597,8 @@
   --trade-sidebar: 232px;
   min-height: 100dvh;
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--border) 28%, transparent) 1px, transparent 1px) 0 0 / 28px 28px,
-    linear-gradient(color-mix(in srgb, var(--border) 22%, transparent) 1px, transparent 1px) 0 0 / 28px 28px,
     radial-gradient(circle at 82% 4%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 27rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-soft) 30%, transparent), transparent 24rem),
     var(--bg);
 }
 .trading-sidebar {
@@ -990,7 +989,7 @@
 }
 .trade-modal-header {
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--border) 30%, transparent) 1px, transparent 1px) 0 0 / 24px 24px,
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--primary) 9%, transparent), transparent 18rem),
     linear-gradient(120deg, color-mix(in srgb, var(--primary-soft) 68%, var(--surface)), var(--surface));
 }
 .trade-modal-close {
@@ -1058,7 +1057,7 @@
   border-color: var(--border);
   border-radius: var(--radius);
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--border) 28%, transparent) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(135deg, color-mix(in srgb, var(--surface-soft) 64%, transparent), transparent),
     var(--surface);
 }
 .trading-loading {
@@ -1139,5 +1138,331 @@
   .settings-add-option select {
     width: 100%;
     max-width: none;
+  }
+}
+
+/* Trading module inside the unified market diary shell */
+.unified-shell .trading-app {
+  --trade-sidebar: 0px;
+  display: block;
+  min-height: 0;
+  background:
+    radial-gradient(circle at 86% 0%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 24rem),
+    transparent;
+}
+
+.unified-shell .trading-topbar {
+  position: relative;
+  top: auto;
+  z-index: 1;
+  min-height: 0;
+  margin-bottom: 10px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.unified-shell .trading-topbar h1 {
+  font-size: 22px;
+}
+
+.unified-shell .trading-topbar p {
+  max-width: 74ch;
+}
+
+.unified-shell .trading-subnav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-raised) 78%, transparent);
+  scrollbar-width: thin;
+}
+
+.unified-shell .trading-subnav a {
+  flex: 0 0 auto;
+  min-width: 132px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.unified-shell .trading-subnav a.active {
+  box-shadow: inset 0 -2px 0 var(--primary);
+}
+
+.unified-shell .trading-content {
+  width: 100%;
+  margin: 0;
+  padding: 0 0 28px;
+}
+
+.unified-shell .trading-filter-strip,
+.unified-shell .trade-filter-panel {
+  position: sticky;
+  z-index: 8;
+  top: 82px;
+}
+
+@media (max-width: 1180px) {
+  .unified-shell .trading-filter-strip,
+  .unified-shell .trade-filter-panel {
+    top: 126px;
+  }
+}
+
+@media (max-width: 760px) {
+  .unified-shell .trading-topbar {
+    margin-bottom: 8px;
+  }
+
+  .unified-shell .trading-topbar h1 {
+    font-size: 19px;
+  }
+
+  .unified-shell .trading-topbar p {
+    display: block;
+  }
+
+  .unified-shell .trading-subnav {
+    margin-right: -10px;
+    margin-left: -10px;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    scroll-padding-left: 10px;
+  }
+
+  .unified-shell .trading-subnav a {
+    min-width: 118px;
+  }
+
+  .unified-shell .trading-filter-strip,
+  .unified-shell .trade-filter-panel {
+    top: 56px;
+  }
+}
+
+/* Stitch-informed trading workspace structure */
+.unified-shell .trading-app {
+  min-height: 0;
+  background: transparent;
+}
+
+.unified-shell .trading-content {
+  width: 100%;
+  padding: 0;
+}
+
+.unified-shell .trading-filter-strip,
+.unified-shell .trade-filter-panel {
+  position: static;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.unified-shell .trading-filter-strip {
+  justify-content: flex-start;
+}
+
+.unified-shell .trading-filter-strip > span {
+  margin-left: auto;
+}
+
+.unified-shell .trading-kpi-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.unified-shell .trading-kpi {
+  min-height: 136px;
+  padding: 18px;
+  border-top-width: 1px;
+  box-shadow: none;
+}
+
+.unified-shell .trading-kpi > strong {
+  margin: 10px 0 8px;
+  font-size: 28px;
+}
+
+.unified-shell .trading-dashboard-grid {
+  gap: 18px;
+}
+
+.unified-shell .trading-panel,
+.unified-shell .trade-ledger-panel,
+.unified-shell .daily-metrics article,
+.unified-shell .daily-save-bar {
+  box-shadow: none;
+}
+
+.unified-shell .trading-pnl-panel {
+  grid-column: span 8;
+  min-height: 362px;
+}
+
+.unified-shell .trading-calendar-panel {
+  grid-column: span 4;
+  min-height: 362px;
+}
+
+.unified-shell .trading-recent-panel {
+  grid-column: span 8;
+}
+
+.unified-shell .equity-chart {
+  min-height: 240px;
+}
+
+.unified-shell .equity-chart svg {
+  height: 210px;
+}
+
+.unified-shell .pnl-calendar {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.unified-shell .pnl-calendar > div {
+  min-height: 76px;
+  padding: 10px;
+}
+
+.unified-shell .pnl-calendar b {
+  font-size: 13px;
+}
+
+.unified-shell .trade-filter-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) repeat(5, minmax(120px, 1fr)) auto;
+  align-items: end;
+}
+
+.unified-shell .trade-filter-panel select,
+.unified-shell .trade-filter-panel input {
+  width: 100%;
+}
+
+.unified-shell .trade-ledger-panel {
+  border-radius: var(--radius);
+}
+
+.unified-shell .trade-ledger-panel > header {
+  padding: 14px 16px;
+}
+
+.unified-shell .trade-table th {
+  padding: 12px 14px;
+}
+
+.unified-shell .trade-table td {
+  padding: 14px;
+}
+
+.unified-shell .daily-metrics {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.unified-shell .daily-layout {
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+}
+
+.unified-shell .daily-review-form {
+  gap: 18px;
+}
+
+.unified-shell .daily-save-bar {
+  bottom: 18px;
+}
+
+.unified-shell .analytics-grid,
+.unified-shell .settings-grid {
+  gap: 18px;
+}
+
+.unified-shell .analytics-wide,
+.unified-shell .settings-options-panel {
+  grid-column: 1 / -1;
+}
+
+.unified-shell .settings-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.unified-shell .settings-add-option,
+.unified-shell .settings-inline-form,
+.unified-shell .settings-export-range {
+  gap: 10px;
+}
+
+.unified-shell .option-groups {
+  gap: 12px;
+}
+
+@media (max-width: 1240px) {
+  .unified-shell .trading-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .unified-shell .trade-filter-panel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .unified-shell .trade-search-field,
+  .unified-shell .trade-filter-panel > button {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 980px) {
+  .unified-shell .trading-pnl-panel,
+  .unified-shell .trading-calendar-panel,
+  .unified-shell .trading-recent-panel {
+    grid-column: 1 / -1;
+  }
+
+  .unified-shell .daily-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .unified-shell .daily-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .unified-shell .trading-filter-strip,
+  .unified-shell .trade-filter-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .unified-shell .trading-filter-strip > span,
+  .unified-shell .trade-search-field,
+  .unified-shell .trade-filter-panel > button {
+    grid-column: 1 / -1;
+    margin-left: 0;
+  }
+
+  .unified-shell .trading-kpi-grid,
+  .unified-shell .daily-metrics,
+  .unified-shell .analytics-grid,
+  .unified-shell .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .unified-shell .pnl-calendar {
+    grid-template-columns: 1fr 1fr;
   }
 }
