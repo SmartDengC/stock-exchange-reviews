@@ -10,7 +10,7 @@ useSeoMeta({ title: () => `${title.value} · 市场日记` });
 </script>
 
 <template>
-  <main class="empty-state">
+  <main id="main-content" class="empty-state">
     <p class="eyebrow">MARKET DIARY / {{ error.statusCode || 500 }}</p>
     <h1>{{ title }}</h1>
     <p>{{ description }}</p>

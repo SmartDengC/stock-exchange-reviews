@@ -39,7 +39,7 @@ async function login() {
 </script>
 
 <template>
-  <main class="trading-login-page">
+  <main id="main-content" class="trading-login-page">
     <section class="trading-login-card">
       <NuxtLink class="trading-brand" to="/">
         <span class="brand-mark">M</span>

@@ -19,7 +19,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <main class="report-page">
+  <main id="main-content" class="report-page">
     <header class="report-topbar">
       <NuxtLink class="brand" to="/"><span class="brand-mark">M</span><span>市场日记<small>MARKET DIARY</small></span></NuxtLink>
       <div class="topbar-actions"><ThemeToggle /><NuxtLink class="secondary-link" to="/#archives">返回归档 ←</NuxtLink></div>

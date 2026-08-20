@@ -86,7 +86,7 @@ const driverCards = [
 </script>
 
 <template>
-  <main class="app-shell">
+  <main id="main-content" class="app-shell">
     <header class="topbar">
       <div>
         <div class="site-brand">市场日记 · 个人研究资料库</div>

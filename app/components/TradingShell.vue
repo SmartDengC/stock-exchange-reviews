@@ -31,7 +31,7 @@ async function logout() {
 </script>
 
 <template>
-  <main class="trading-app">
+  <main id="main-content" class="trading-app">
     <aside :class="['trading-sidebar', { 'is-open': navOpen }]">
       <div class="trading-brand-row">
         <NuxtLink class="trading-brand" to="/trading" @click="navOpen = false">
