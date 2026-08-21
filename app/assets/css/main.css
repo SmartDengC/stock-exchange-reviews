@@ -967,6 +967,15 @@ footer span,
   box-shadow: var(--shadow-deep);
 }
 .trading-login-copy h1 { letter-spacing: 0; }
+.timeout-notice {
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--border));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--warning) 9%, transparent);
+  color: var(--warning);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
 .form-error {
   padding: 8px 10px;
   border: 1px solid color-mix(in srgb, var(--positive) 35%, var(--border));
@@ -2425,10 +2434,27 @@ footer span,
 }
 
 .loading-state {
-  padding: 24px;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 0;
   color: var(--muted);
   font-size: 13px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .review-editor {
@@ -2583,6 +2609,7 @@ footer span,
   }
 
   .unified-side-rail.is-open {
+    z-index: calc(var(--z-overlay) + 1);
     transform: translateX(0);
   }
 

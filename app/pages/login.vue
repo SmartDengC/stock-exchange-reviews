@@ -4,6 +4,8 @@ const username = ref("");
 const password = ref("");
 const loading = ref(false);
 const error = ref("");
+const isTimeout = computed(() => route.query.timeout === "true");
+
 const { fetch: refreshSession, loggedIn } = useUserSession();
 
 useSeoMeta({
@@ -27,6 +29,7 @@ async function login() {
       method: "POST",
       body: { username: username.value, password: password.value },
     });
+    localStorage.setItem("session_login_time", String(Date.now()));
     await refreshSession();
     await navigateTo(String(route.query.returnTo || "/research/rules"));
   } catch (cause) {
@@ -48,7 +51,8 @@ async function login() {
       <div class="trading-login-copy">
         <span class="eyebrow">WELCOME</span>
         <h1>登录市场日记</h1>
-        <p>请输入账号和密码进入研究终端。</p>
+        <p v-if="isTimeout" class="timeout-notice">Session 已过期，请重新登录。</p>
+        <p v-else>请输入账号和密码进入研究终端。</p>
       </div>
       <form @submit.prevent="login">
         <label for="login-username">账号</label>

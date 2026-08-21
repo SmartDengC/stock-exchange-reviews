@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { parseTables } from "~/lib/reviews";
 
-const { data: weeklyReviews } = useResearchReviewList({ kind: "weekly" });
+const { data: weeklyReviews, status } = useResearchReviewList({ kind: "weekly" });
 
 const review = computed(() => {
   const first = weeklyReviews.value?.[0];
@@ -25,7 +25,11 @@ useSeoMeta({
 <template>
   <Dashboard v-if="review" :review="review" />
   <AppShell v-else module="research" title="周度研究终端">
-    <main class="empty-state">
+    <main v-if="status === 'pending'" class="loading-state">
+      <div class="spinner" />
+      <p>加载中...</p>
+    </main>
+    <main v-else class="empty-state">
       <p class="eyebrow">MARKET DIARY</p>
       <h1>尚未发现市场复盘</h1>
       <p>请前往「复盘总览」新建周复盘数据。</p>

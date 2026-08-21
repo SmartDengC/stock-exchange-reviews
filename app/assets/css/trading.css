@@ -364,8 +364,7 @@
 .queued-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .queued-files > span { padding: 5px 7px; border-radius: 5px; background: var(--surface-soft); font-size: 10px; }
 .queued-files button { margin-left: 5px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-.trade-modal-footer { display: flex; min-height: 62px; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 18px; border-top: 1px solid var(--border); background: var(--surface); }
-.trade-modal-footer > div { display: flex; gap: 8px; margin-left: auto; }
+.trade-modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--border); background: var(--surface); }
 
 .trade-detail-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .trade-detail-body { min-height: 0; overflow: auto; padding: 18px 20px 30px; }
@@ -526,6 +525,8 @@
   .trade-result-hero dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .trade-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .trade-gallery figure > button { height: 120px; }
+  .trade-modal-footer { padding: 10px 12px; }
+  .trade-modal-footer button { flex: 1; min-width: 0; white-space: nowrap; }
   .daily-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .discipline-grid { grid-template-columns: 1fr; }
   .analytics-table > div { grid-template-columns: 1fr 50px 70px 100px; font-size: 10px; }

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { Modal } from "@arco-design/web-vue";
+import { useSessionTimeout } from "~/composables/use-session-timeout";
+
 type ModuleKey = "research" | "trading";
 
 const props = defineProps<{
@@ -41,8 +44,28 @@ const activeModule = computed<ModuleKey>(() => route.path.startsWith("/trading")
 const userName = computed(() => user.value?.username ?? "已登录用户");
 const userInitial = computed(() => userName.value.trim().slice(0, 1).toUpperCase() || "M");
 
+const sessionTimeout = useSessionTimeout(() => {
+  Modal.warning({
+    title: "Session 即将过期",
+    content: "您已登录 55 分钟，Session 将在 5 分钟后过期。点击确定将跳转至登录页。",
+    okText: "确定",
+    cancelText: "稍后提醒",
+    onOk: async () => {
+      await $fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+      await refreshSession();
+      localStorage.removeItem("session_login_time");
+      await navigateTo("/login?timeout=true");
+    },
+  });
+});
+
 onMounted(() => {
   navCollapsed.value = localStorage.getItem("market-diary:nav-collapsed") === "true";
+  sessionTimeout.init();
+});
+
+onUnmounted(() => {
+  sessionTimeout.stop();
 });
 
 watch(navCollapsed, (value) => {

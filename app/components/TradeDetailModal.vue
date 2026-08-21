@@ -13,7 +13,6 @@ const props = defineProps<{ trade: TradeView | null }>();
 const emit = defineEmits<{
   close: [];
   edit: [trade: TradeView];
-  clone: [trade: TradeView];
   deleted: [id: string];
   refresh: [];
   updated: [trade: TradeView];
@@ -182,10 +181,7 @@ async function refreshTrade(id: string) {
 
           <footer class="trade-modal-footer">
             <button type="button" class="trading-danger-button" :disabled="deleting" @click="removeTrade">移入回收状态</button>
-            <div>
-              <button type="button" class="trading-secondary-button" @click="emit('clone', trade)">复制为新交易</button>
-              <button type="button" class="trading-primary-button" @click="emit('edit', trade)">编辑交易</button>
-            </div>
+            <button type="button" class="trading-primary-button" @click="emit('edit', trade)">编辑交易</button>
           </footer>
         </section>
       </div>

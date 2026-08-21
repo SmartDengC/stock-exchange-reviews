@@ -60,13 +60,6 @@ function editTrade(trade: TradeView) {
   formOpen.value = true;
 }
 
-function cloneTrade(trade: TradeView) {
-  selectedTrade.value = null;
-  editingTrade.value = null;
-  cloneSource.value = trade;
-  formOpen.value = true;
-}
-
 async function reloadData() {
   await refresh();
 }
@@ -182,6 +175,6 @@ async function reloadData() {
     </TradingShell>
 
     <TradeFormModal :open="formOpen" :trade="editingTrade" :clone-source="cloneSource" @close="formOpen = false" @saved="reloadData" />
-    <TradeDetailModal :trade="selectedTrade" @close="selectedTrade = null" @edit="editTrade" @clone="cloneTrade" @deleted="reloadData" @refresh="reloadData" @updated="selectedTrade = $event" />
+    <TradeDetailModal :trade="selectedTrade" @close="selectedTrade = null" @edit="editTrade" @deleted="reloadData" @refresh="reloadData" @updated="selectedTrade = $event" />
   </div>
 </template>

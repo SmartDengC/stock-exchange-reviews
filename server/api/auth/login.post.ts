@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   await setUserSession(
     event,
     { user: { username, role: "user" as const } },
-    { maxAge: 60 * 60 * 24 * 365 },
+    { maxAge: 60 * 60 }, // 1 小时
   );
   
   return { loggedIn: true };

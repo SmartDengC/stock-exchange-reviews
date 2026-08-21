@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount } from "vue";
 import { getDefaultTradingDateRange } from "~~/shared/trading-date-range";
-import type { TradeView, TradingOptionsResponse } from "~~/shared/types/trading";
+import type { TradeView } from "~~/shared/types/trading";
 import { formatMoney, marketLabel, sideLabel, statusLabel } from "~/lib/trading";
 
 useSeoMeta({ title: "交易记录 · 私有交易复盘", robots: "noindex, nofollow" });
@@ -21,14 +21,8 @@ onBeforeUnmount(() => {
 const filters = reactive({
   from: defaultDateRange.from,
   to: defaultDateRange.to,
-  market: "",
   status: typeof route.query.status === "string" ? route.query.status : "",
-  side: "",
-  strategy: "",
-  timeframe: "",
   grade: "",
-  emotion: "",
-  errorTag: "",
   outcome: "",
   q: "",
 });
@@ -62,28 +56,6 @@ const { data, pending, error, refresh } = await useFetch<TradeListResponse>("/ap
   }),
 });
 
-// 从字典表获取筛选选项，而不是从查询结果中提取
-const options = ref<TradingOptionsResponse | null>(null);
-onMounted(async () => {
-  options.value = await $fetch<TradingOptionsResponse>("/api/trading/options").catch(() => null);
-});
-
-const strategies = computed(() => 
-  options.value?.options.filter(item => item.kind === "strategy" && item.active).map(item => item.label) ?? []
-);
-
-const timeframes = computed(() => 
-  options.value?.options.filter(item => item.kind === "timeframe" && item.active).map(item => item.label) ?? []
-);
-
-const emotions = computed(() => 
-  options.value?.options.filter(item => item.kind === "emotion" && item.active).map(item => item.label) ?? []
-);
-
-const errorTags = computed(() => 
-  options.value?.options.filter(item => item.kind === "error_tag" && item.active).map(item => item.label) ?? []
-);
-
 function newTrade() {
   editingTrade.value = null;
   cloneSource.value = null;
@@ -93,21 +65,14 @@ function newTrade() {
 function editTrade(trade: TradeView) {
   selectedTrade.value = null;
   editingTrade.value = trade;
-  cloneSource.value = null;
-  formOpen.value = true;
-}
-
-function cloneTrade(trade: TradeView) {
-  selectedTrade.value = null;
-  editingTrade.value = null;
-  cloneSource.value = trade;
   formOpen.value = true;
 }
 
 function clearFilters() {
   const dateRange = getDefaultTradingDateRange();
-  Object.assign(filters, { ...dateRange, market: "", status: "", side: "", strategy: "", timeframe: "", grade: "", emotion: "", errorTag: "", outcome: "", q: "" });
-  currentPage.value = 1; // 重置到第一页
+  Object.assign(filters, { ...dateRange, status: "", grade: "", outcome: "", q: "" });
+  searchInput.value = "";
+  currentPage.value = 1;
 }
 
 async function reloadData() {
@@ -131,14 +96,8 @@ function goToPage(page: number) {
       <div class="trade-search-field"><span>⌕</span><input :value="searchInput" @input="(e) => searchInput = (e.target as HTMLInputElement).value" placeholder="搜索标的或代码" aria-label="搜索标的或代码"></div>
       <input v-model="filters.from" type="date" aria-label="开始日期">
       <input v-model="filters.to" type="date" aria-label="结束日期">
-      <select v-model="filters.market" aria-label="筛选市场"><option value="">全部市场</option><option value="crypto">加密</option><option value="a_share">A 股</option></select>
       <select v-model="filters.status" aria-label="筛选状态"><option value="">全部状态</option><option value="closed">已平仓</option><option value="open">未平仓</option></select>
-      <select v-model="filters.side" aria-label="筛选方向"><option value="">全部方向</option><option value="long">做多</option><option value="short">做空</option></select>
-      <select v-model="filters.strategy" aria-label="筛选策略"><option value="">全部策略</option><option v-for="item in strategies" :key="item">{{ item }}</option></select>
-      <select v-model="filters.timeframe" aria-label="筛选周期"><option value="">全部周期</option><option v-for="item in timeframes" :key="item">{{ item }}</option></select>
       <select v-model="filters.grade" aria-label="筛选评分"><option value="">全部评分</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
-      <select v-model="filters.emotion" aria-label="筛选情绪"><option value="">全部情绪</option><option v-for="item in emotions" :key="item">{{ item }}</option></select>
-      <select v-model="filters.errorTag" aria-label="筛选错误标签"><option value="">全部错误标签</option><option v-for="item in errorTags" :key="item">{{ item }}</option></select>
       <select v-model="filters.outcome" aria-label="筛选结果"><option value="">全部结果</option><option value="win">盈利</option><option value="loss">亏损</option></select>
       <button type="button" @click="clearFilters" aria-label="重置筛选条件">重置</button>
     </section>
@@ -201,6 +160,6 @@ function goToPage(page: number) {
     </TradingShell>
 
     <TradeFormModal :open="formOpen" :trade="editingTrade" :clone-source="cloneSource" @close="formOpen = false" @saved="reloadData" />
-    <TradeDetailModal :trade="selectedTrade" @close="selectedTrade = null" @edit="editTrade" @clone="cloneTrade" @deleted="reloadData" @refresh="reloadData" @updated="selectedTrade = $event" />
+    <TradeDetailModal :trade="selectedTrade" @close="selectedTrade = null" @edit="editTrade" @deleted="reloadData" @refresh="reloadData" @updated="selectedTrade = $event" />
   </div>
 </template>
