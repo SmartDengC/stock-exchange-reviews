@@ -8,7 +8,10 @@ useSeoMeta({ title: () => `${date.value} 日复盘 · 私有交易复盘`, robot
 
 const saving = ref(false);
 const status = ref("");
-const { data, pending, error, refresh } = await useFetch<DailyReviewView>(() => `/api/trading/daily-reviews/${date.value}`);
+const { data, pending, error, refresh } = useFetch<DailyReviewView>(() => `/api/trading/daily-reviews/${date.value}`, {
+  lazy: true,
+  server: false,
+});
 const form = reactive<DailyReviewInput>({ reviewDate: date.value });
 const marketMetrics = computed(() => ["crypto", "a_share"].map((market) => {
   const trades = (data.value?.trades ?? []).filter((trade) => trade.market === market);

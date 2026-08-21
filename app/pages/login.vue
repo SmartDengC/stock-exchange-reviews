@@ -13,12 +13,13 @@ useSeoMeta({
   robots: "noindex, nofollow",
 });
 
-onMounted(async () => {
+// 在客户端检查登录状态
+if (import.meta.client) {
   await refreshSession().catch(() => undefined);
   if (loggedIn.value) {
     await navigateTo(String(route.query.returnTo || "/research/rules"));
   }
-});
+}
 
 async function login() {
   if (!username.value || !password.value || loading.value) return;
@@ -29,9 +30,12 @@ async function login() {
       method: "POST",
       body: { username: username.value, password: password.value },
     });
-    localStorage.setItem("session_login_time", String(Date.now()));
-    await refreshSession();
-    await navigateTo(String(route.query.returnTo || "/research/rules"));
+    if (import.meta.client) {
+      localStorage.setItem("session_login_time", String(Date.now()));
+      // 用完整页面跳转（非 SPA 导航），确保 session cookie 在所有浏览器中被正确携带。
+      // navigateTo() 是 SPA 导航，Safari ITP 可能阻止 fetch 请求携带 cookie。
+      window.location.href = String(route.query.returnTo || "/research/rules");
+    }
   } catch (cause) {
     const value = cause as { data?: { message?: string }; message?: string };
     error.value = value.data?.message ?? value.message ?? "登录失败";

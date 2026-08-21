@@ -6,7 +6,9 @@ useSeoMeta({ title: "统计洞察 · 私有交易复盘", robots: "noindex, nofo
 
 const from = ref("");
 const to = ref("");
-const { data, pending, error } = await useFetch<TradingDashboard>("/api/trading/dashboard", {
+const { data, pending, error } = useFetch<TradingDashboard>("/api/trading/dashboard", {
+  lazy: true,
+  server: false,
   query: computed(() => ({ from: from.value || undefined, to: to.value || undefined })),
 });
 

@@ -34,11 +34,16 @@ export function useResearchReviewList(filters: ResearchReviewFilters = {}) {
   return useFetch<ResearchReview[]>("/api/reviews", {
     query,
     watch: [query],
+    lazy: true,
+    server: false,
   });
 }
 
 export function useResearchReview(kind: string, slug: string) {
-  return useFetch<ResearchReview>(`/api/reviews/${kind}/${slug}`);
+  return useFetch<ResearchReview>(`/api/reviews/${kind}/${slug}`, {
+    lazy: true,
+    server: false,
+  });
 }
 
 export async function saveResearchReview(

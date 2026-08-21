@@ -44,7 +44,9 @@ const cloneSource = ref<TradeView | null>(null);
 const currentPage = ref(1);
 const pageSize = ref(50);
 
-const { data, pending, error, refresh } = await useFetch<TradeListResponse>("/api/trading/trades", {
+const { data, pending, error, refresh } = useFetch<TradeListResponse>("/api/trading/trades", {
+  lazy: true,
+  server: false,
   query: computed(() => {
     const params: Record<string, unknown> = {
       page: currentPage.value,

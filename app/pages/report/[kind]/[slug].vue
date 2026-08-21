@@ -5,16 +5,14 @@ const route = useRoute();
 const kind = Array.isArray(route.params.kind) ? route.params.kind[0] : route.params.kind;
 const slug = Array.isArray(route.params.slug) ? route.params.slug[0] : route.params.slug;
 
-const { data: apiReview, error: fetchError } = await useFetch<ResearchReview>(
+const { data: apiReview, error: fetchError, pending } = useFetch<ResearchReview>(
   `/api/reviews/${kind}/${slug}`,
+  { lazy: true, server: false },
 );
 
-if (fetchError.value || !apiReview.value) {
-  throw createError({ statusCode: 404, statusMessage: "未找到这份复盘" });
-}
-
 const record = computed(() => {
-  const r = apiReview.value!;
+  const r = apiReview.value;
+  if (!r) return null;
   return {
     slug: r.slug,
     kind: r.kind,
@@ -27,13 +25,13 @@ const record = computed(() => {
 });
 
 useSeoMeta({
-  title: () => `${record.value.title} · 市场日记`,
-  description: () => record.value.dateLabel,
+  title: () => (record.value ? `${record.value.title} · 市场日记` : "加载中 · 市场日记"),
+  description: () => record.value?.dateLabel ?? "",
 });
 </script>
 
 <template>
-  <AppShell module="research" :title="record.title" :subtitle="record.dateLabel">
+  <AppShell v-if="record" module="research" :title="record.title" :subtitle="record.dateLabel">
     <template #actions>
       <NuxtLink class="secondary-link" :to="`/research/${record.kind}`">返回归档</NuxtLink>
       <NuxtLink class="secondary-link" :to="`/research/edit/${record.kind}/${record.slug}`">编辑</NuxtLink>
@@ -47,5 +45,21 @@ useSeoMeta({
       </section>
       <MarkdownDocument :markdown="record.raw" />
     </article>
+  </AppShell>
+
+  <AppShell v-else-if="pending" module="research" title="加载中">
+    <main class="loading-state">
+      <div class="spinner" />
+      <p>正在读取复盘…</p>
+    </main>
+  </AppShell>
+
+  <AppShell v-else module="research" title="未找到这份复盘">
+    <main class="empty-state">
+      <p class="eyebrow">MARKET DIARY / 404</p>
+      <h1>未找到这份复盘</h1>
+      <p>{{ fetchError?.message || "该复盘可能已被删除或编号不正确。" }}</p>
+      <NuxtLink to="/" class="secondary-link">返回研究终端</NuxtLink>
+    </main>
   </AppShell>
 </template>

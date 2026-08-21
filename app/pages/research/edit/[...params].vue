@@ -13,15 +13,21 @@ const saving = ref(false);
 const error = ref("");
 const preview = ref(false);
 
-if (isEdit && slug) {
-  const { data: existing } = await useFetch<ResearchReview>(`/api/reviews/${kind}/${slug}`);
-  if (existing.value) {
-    title.value = existing.value.title;
-    dateLabel.value = existing.value.dateLabel;
-    content.value = existing.value.content;
-    version.value = existing.value.version;
+const loading = ref(isEdit);
+const { data: existing } = useFetch<ResearchReview>(
+  () => (isEdit && slug ? `/api/reviews/${kind}/${slug}` : ""),
+  { lazy: true, server: false },
+);
+
+watch(existing, (value) => {
+  if (value) {
+    title.value = value.title;
+    dateLabel.value = value.dateLabel;
+    content.value = value.content;
+    version.value = value.version;
   }
-}
+  loading.value = false;
+}, { immediate: true });
 
 function generateSlug(): string {
   if (kind === "daily") {
@@ -90,6 +96,11 @@ useSeoMeta({
     </template>
 
     <section class="review-editor panel">
+      <div v-if="loading" class="loading-state">
+        <div class="spinner" />
+        <p>正在载入复盘…</p>
+      </div>
+      <template v-else>
       <div class="editor-fields">
         <div class="field-row">
           <label>
@@ -129,6 +140,7 @@ useSeoMeta({
         </button>
         <button v-if="isEdit" type="button" class="btn-danger" @click="remove">删除</button>
       </div>
+      </template>
     </section>
   </AppShell>
 </template>

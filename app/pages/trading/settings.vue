@@ -4,7 +4,10 @@ import { errorMessage } from "~/lib/trading";
 
 useSeoMeta({ title: "设置与导出 · 私有交易复盘", robots: "noindex, nofollow" });
 
-const { data, pending, error, refresh } = await useFetch<TradingOptionsResponse>("/api/trading/options");
+const { data, pending, error, refresh } = useFetch<TradingOptionsResponse>("/api/trading/options", {
+  lazy: true,
+  server: false,
+});
 const rate = ref("7.2");
 const newOption = reactive<{ kind: TradingOptionKind; label: string }>({ kind: "strategy", label: "" });
 const status = ref("");
