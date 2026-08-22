@@ -9,6 +9,33 @@ export type ReviewRecord = {
   tables: Table[];
 };
 
+function isoWeekSlug(year: number, month: number, day: number): string {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const weekday = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - weekday); // 本周四决定 ISO 年与周数
+  const yearStart = Date.UTC(date.getUTCFullYear(), 0, 1);
+  const week = Math.ceil(((date.getTime() - yearStart) / 86_400_000 + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+export function generateReviewSlug(kind: "daily" | "weekly", dateLabel: string, title = ""): string {
+  // 全角转半角：中文输入法常打出 ２０２６－０８－２１，\d 不匹配全角
+  dateLabel = dateLabel.replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/－/g, "-");
+  const dateMatch = dateLabel.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+  if (kind === "daily") {
+    if (dateMatch) return `${dateMatch[1]}-${dateMatch[2]!.padStart(2, "0")}-${dateMatch[3]!.padStart(2, "0")}`;
+    const iso = dateLabel.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (iso) return `${iso[1]}-${iso[2]!.padStart(2, "0")}-${iso[3]!.padStart(2, "0")}`;
+    return "";
+  }
+  const explicit = dateLabel.match(/(\d{4})-W(\d{1,2})\b/);
+  if (explicit) return `${explicit[1]}-W${explicit[2]!.padStart(2, "0")}`;
+  const titleWeek = title.match(/(\d{4})年第(\d{1,2})周/);
+  if (titleWeek) return `${titleWeek[1]}-W${titleWeek[2]!.padStart(2, "0")}`;
+  if (dateMatch) return isoWeekSlug(+dateMatch[1]!, +dateMatch[2]!, +dateMatch[3]!);
+  return "";
+}
+
 function cell(value: string) {
   return value
     .replace(/[*_`]/g, "")

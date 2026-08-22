@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { generateReviewSlug } from "~/lib/reviews";
+
 const route = useRoute();
 const router = useRouter();
-const kind = route.params.kind as "daily" | "weekly";
-const slug = route.params.slug as string | undefined;
+const segments = (Array.isArray(route.params.params) ? route.params.params : [route.params.params]).filter(Boolean);
+const kind = (segments[0] === "weekly" ? "weekly" : "daily");
+const slug = segments[1];
 const isEdit = Boolean(slug);
 
 const title = ref("");
@@ -30,22 +33,16 @@ watch(existing, (value) => {
 }, { immediate: true });
 
 function generateSlug(): string {
-  if (kind === "daily") {
-    const d = dateLabel.value.match(/\d{4}年\d{1,2}月\d{1,2}日/)?.[0];
-    if (d) return d.replace(/年|-/g, "-").replace(/月/, "-").replace(/日/, "");
-  }
-  if (kind === "weekly") {
-    const w = dateLabel.value.match(/\d{4}-W\d{2}/)?.[0];
-    if (w) return w;
-  }
-  return "";
+  return generateReviewSlug(kind, dateLabel.value, title.value);
 }
 
 async function save() {
   error.value = "";
   const targetSlug = slug || generateSlug();
   if (!targetSlug) {
-    error.value = "无法生成编号，请在日期字段中输入有效日期";
+    error.value = kind === "weekly"
+      ? "无法生成编号：请在日期标签填写日期（如 2026年8月10日-14日）或周号（2026-W33），或在标题中注明“2026年第33周”"
+      : "无法生成编号：请在日期标签填写日期，如 2026年8月14日（周五）或 2026-08-14";
     return;
   }
   if (!title.value.trim()) {
@@ -111,7 +108,7 @@ useSeoMeta({
         <div class="field-row">
           <label>
             <span>日期标签</span>
-            <input v-model="dateLabel" type="text" :placeholder="kind === 'weekly' ? '例：2026年8月10日-14日' : '例：2026年8月14日（周五）'">
+            <input v-model="dateLabel" type="text" :placeholder="kind === 'weekly' ? '例：2026年8月10日-14日 或 2026-W33' : '例：2026年8月14日（周五）或 2026-08-14'">
           </label>
           <label>
             <span>编号 (slug)</span>
