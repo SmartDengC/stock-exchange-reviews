@@ -1,68 +1,33 @@
 <script setup lang="ts">
 import type { ReviewRecord } from "~/lib/reviews";
+import { useAccessibleDialog } from "~/composables/use-accessible-dialog";
 
 const props = defineProps<{ review: ReviewRecord | null }>();
 const emit = defineEmits<{ close: [] }>();
 
-const closeButton = ref<HTMLButtonElement | null>(null);
-let bodyOverflow = "";
-let returnFocus: HTMLElement | null = null;
-let scrollLocked = false;
+const closeButton = ref<HTMLElement | null>(null);
+const visible = computed(() => Boolean(props.review));
 
 function close() {
   emit("close");
 }
 
-function lockPageScroll() {
-  if (!import.meta.client || scrollLocked) return;
-  bodyOverflow = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
-  scrollLocked = true;
-}
-
-function unlockPageScroll() {
-  if (!import.meta.client || !scrollLocked) return;
-  document.body.style.overflow = bodyOverflow;
-  scrollLocked = false;
-}
-
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape" && props.review) close();
-}
-
-watch(() => Boolean(props.review), (visible) => {
-  if (!import.meta.client) return;
-
-  if (visible) {
-    returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    lockPageScroll();
-    nextTick().then(() => closeButton.value?.focus());
-    return;
-  }
-
-  unlockPageScroll();
-  nextTick().then(() => {
-    returnFocus?.focus();
-    returnFocus = null;
-  });
-});
-
-onMounted(() => document.addEventListener("keydown", onKeydown));
-onBeforeUnmount(() => {
-  document.removeEventListener("keydown", onKeydown);
-  unlockPageScroll();
-});
+const { dialogRef, onDialogKeydown } = useAccessibleDialog(visible, close, closeButton);
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="review-overlay">
-      <div v-if="review" class="review-overlay-backdrop" @click.self="close">
+      <div v-if="review" class="review-overlay-backdrop">
+        <button type="button" class="review-overlay-dismiss" aria-label="关闭报告" @click="close" />
         <section
+          ref="dialogRef"
           class="review-overlay-panel"
           role="dialog"
           aria-modal="true"
           aria-labelledby="review-overlay-title"
+          tabindex="-1"
+          @keydown="onDialogKeydown"
         >
           <header class="review-overlay-header">
             <div>

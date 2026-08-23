@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { upload } from "@vercel/blob/client";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 import { calculateTrade } from "~~/shared/trading-calculator";
 import type {
   TradeInput,
   TradeView,
   TradingOptionsResponse,
 } from "~~/shared/types/trading";
+import { useAccessibleDialog } from "~/composables/use-accessible-dialog";
 import {
   blankTrade,
   errorMessage,
@@ -34,6 +36,27 @@ const options = ref<TradingOptionsResponse | null>(null);
 const form = reactive<TradeInput>(blankTrade());
 const entryLocal = ref("");
 const exitLocal = ref("");
+const closeButton = ref<HTMLElement | null>(null);
+const errorElement = ref<HTMLElement | null>(null);
+const initialSnapshot = ref("");
+const visible = computed(() => props.open);
+
+function snapshot() {
+  return JSON.stringify({ form, entryLocal: entryLocal.value, exitLocal: exitLocal.value, files: queuedFiles.value.map((file) => file.name) });
+}
+
+const dirty = computed(() => props.open && Boolean(initialSnapshot.value) && snapshot() !== initialSnapshot.value);
+
+function setNumericField(field: "entryPrice" | "exitPrice" | "positionSize" | "fxToCny" | "plannedRiskAmount" | "fees", event: Event) {
+  Object.assign(form, { [field]: (event.target as HTMLInputElement).value });
+}
+
+function requestClose() {
+  if (dirty.value && !window.confirm("这笔交易还有未保存的修改，确定关闭吗？")) return;
+  emit("close");
+}
+
+const { dialogRef, onDialogKeydown } = useAccessibleDialog(visible, requestClose, closeButton);
 
 const strategies = computed(() => options.value?.options.filter((item) => item.kind === "strategy" && item.active) ?? []);
 const timeframes = computed(() => options.value?.options.filter((item) => item.kind === "timeframe" && item.active) ?? []);
@@ -60,7 +83,7 @@ function resetForm() {
   if (props.cloneSource) {
     source = {
       ...source,
-      tradeDate: new Date().toISOString().slice(0, 10),
+      tradeDate: source.tradeDate,
       instrumentCode: props.cloneSource.instrumentCode,
       symbol: props.cloneSource.symbol,
       market: props.cloneSource.market,
@@ -109,6 +132,7 @@ function resetForm() {
   exitLocal.value = localDateTime(source.exitAt);
   queuedFiles.value = [];
   error.value = "";
+  initialSnapshot.value = snapshot();
 }
 
 watch(() => form.market, (market) => {
@@ -154,11 +178,11 @@ function chooseFiles(event: Event) {
   error.value = "";
   for (const file of files) {
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      error.value = "只支持 JPEG、PNG 和 WebP 截图";
+      error.value = "只支持 JPEG、PNG 和 WebP 截图，请重新选择文件";
       continue;
     }
     if (file.size > 15 * 1024 * 1024) {
-      error.value = "单张截图不能超过 15 MB";
+      error.value = "单张截图不能超过 15 MB，请压缩后重试";
       continue;
     }
     if (queuedFiles.value.length < 10) queuedFiles.value.push(file);
@@ -224,98 +248,120 @@ async function save() {
       return;
     }
     emit("saved", trade);
+    initialSnapshot.value = snapshot();
     emit("close");
   } catch (cause) {
     error.value = errorMessage(cause);
+    await nextTick();
+    errorElement.value?.focus();
   } finally {
     saving.value = false;
   }
 }
+
+function warnBeforeUnload(event: BeforeUnloadEvent) {
+  if (!dirty.value) return;
+  event.preventDefault();
+  event.returnValue = "";
+}
+
+onMounted(() => window.addEventListener("beforeunload", warnBeforeUnload));
+onBeforeUnmount(() => window.removeEventListener("beforeunload", warnBeforeUnload));
+onBeforeRouteLeave(() => !dirty.value || window.confirm("这笔交易还有未保存的修改，确定离开吗？"));
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="review-overlay">
       <div v-if="open" class="trade-modal-backdrop">
-        <section class="trade-form-modal" role="dialog" aria-modal="true" aria-labelledby="trade-form-title">
+        <button type="button" class="trade-modal-dismiss" aria-label="关闭交易表单" @click="requestClose" />
+        <section
+          ref="dialogRef"
+          class="trade-form-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="trade-form-title"
+          tabindex="-1"
+          @keydown="onDialogKeydown"
+        >
           <header class="trade-modal-header">
             <div>
               <span class="eyebrow">{{ trade ? "EDIT TRADE" : cloneSource ? "CLONE TRADE" : "NEW TRADE" }}</span>
               <h2 id="trade-form-title">{{ trade ? "编辑交易记录" : "记录一笔交易" }}</h2>
             </div>
-            <button type="button" class="trade-modal-close" aria-label="关闭" @click="emit('close')">×</button>
+            <button ref="closeButton" type="button" class="trade-modal-close" aria-label="关闭" @click="requestClose">×</button>
           </header>
 
-          <form class="trade-form-body" @submit.prevent="save">
+          <form id="trade-form" class="trade-form-body" autocomplete="off" @submit.prevent="save">
             <div class="trade-form-main">
               <!-- 加载选项时的提示 -->
-              <div v-if="loadingOptions" class="trade-form-loading">
-                <p>正在加载交易选项...</p>
+              <div v-if="loadingOptions" class="trade-form-loading" aria-live="polite">
+                <p>正在加载交易选项…</p>
               </div>
               
-              <section class="trade-form-section" v-else>
+              <section v-else class="trade-form-section">
                 <div class="trade-section-title"><span>01</span><h3>基本信息</h3></div>
                 <div class="trade-form-grid">
-                  <label>交易状态<select v-model="form.status"><option value="closed">已平仓</option><option value="open">未平仓</option></select></label>
-                  <label>交易日期<input v-model="form.tradeDate" type="date" required></label>
-                  <label>市场<select v-model="form.market"><option value="crypto">加密</option><option value="a_share">A 股</option></select></label>
-                  <label>方向<select v-model="form.side"><option value="long">做多</option><option value="short">做空</option></select></label>
-                  <label>合约/证券代码<input v-model="form.instrumentCode" list="trade-instrument-codes" placeholder="MUUSDT / 159316"><datalist id="trade-instrument-codes"><option v-for="item in instrumentCodes" :key="item.id" :value="item.label" /></datalist></label>
-                  <label>标的<input v-model="form.symbol" list="trade-symbols" required placeholder="标的名称"><datalist id="trade-symbols"><option v-for="item in symbols" :key="item.id" :value="item.label" /></datalist></label>
-                  <label>策略<input v-model="form.strategy" list="trade-strategies" required><datalist id="trade-strategies"><option v-for="item in strategies" :key="item.id" :value="item.label" /></datalist></label>
-                  <label>周期<input v-model="form.timeframe" list="trade-timeframes" required><datalist id="trade-timeframes"><option v-for="item in timeframes" :key="item.id" :value="item.label" /></datalist></label>
+                  <label>交易状态<select v-model="form.status" name="status"><option value="closed">已平仓</option><option value="open">未平仓</option></select></label>
+                  <label>交易日期<input v-model="form.tradeDate" name="tradeDate" type="date" required></label>
+                  <label>市场<select v-model="form.market" name="market"><option value="crypto">加密</option><option value="a_share">A 股</option></select></label>
+                  <label>方向<select v-model="form.side" name="side"><option value="long">做多</option><option value="short">做空</option></select></label>
+                  <label>合约/证券代码<input v-model="form.instrumentCode" name="instrumentCode" list="trade-instrument-codes" spellcheck="false" placeholder="例：MUUSDT / 159316…"><datalist id="trade-instrument-codes"><option v-for="item in instrumentCodes" :key="item.id" :value="item.label" /></datalist></label>
+                  <label>标的<input v-model="form.symbol" name="symbol" list="trade-symbols" required placeholder="例：黄金…"><datalist id="trade-symbols"><option v-for="item in symbols" :key="item.id" :value="item.label" /></datalist></label>
+                  <label>策略<input v-model="form.strategy" name="strategy" list="trade-strategies" required><datalist id="trade-strategies"><option v-for="item in strategies" :key="item.id" :value="item.label" /></datalist></label>
+                  <label>周期<input v-model="form.timeframe" name="timeframe" list="trade-timeframes" required><datalist id="trade-timeframes"><option v-for="item in timeframes" :key="item.id" :value="item.label" /></datalist></label>
                 </div>
               </section>
 
               <section class="trade-form-section">
                 <div class="trade-section-title"><span>02</span><h3>开平仓与资金</h3></div>
                 <div class="trade-form-grid">
-                  <label>开仓时间<input v-model="entryLocal" type="datetime-local" required></label>
-                  <label>开仓价<input v-model="form.entryPrice" inputmode="decimal" required placeholder="0.0000"></label>
-                  <label v-if="form.status === 'closed'">平仓时间<input v-model="exitLocal" type="datetime-local" required></label>
-                  <label v-if="form.status === 'closed'">平仓价<input v-model="form.exitPrice" inputmode="decimal" required placeholder="0.0000"></label>
-                  <label>仓位口径<select v-model="form.positionBasis"><option value="notional">名义金额</option><option value="quantity">数量</option></select></label>
-                  <label>仓位/名义金额<input v-model="form.positionSize" inputmode="decimal" required placeholder="0"></label>
-                  <label>结算币种<select v-model="form.settlementCurrency"><option value="USDT">USDT</option><option value="CNY">CNY</option><option value="USD">USD</option></select></label>
-                  <label>逐笔人民币汇率<input v-model="form.fxToCny" inputmode="decimal" :disabled="form.settlementCurrency === 'CNY'" required></label>
-                  <label>计划风险金额<input v-model="form.plannedRiskAmount" inputmode="decimal" placeholder="可选"></label>
-                  <label>手续费税费<input v-model="form.fees" inputmode="decimal" required></label>
+                  <label>开仓时间<input v-model="entryLocal" name="entryAt" type="datetime-local" required></label>
+                  <label>开仓价<input :value="form.entryPrice" name="entryPrice" type="number" inputmode="decimal" step="any" required placeholder="例：0.0000…" @input="setNumericField('entryPrice', $event)"></label>
+                  <label v-if="form.status === 'closed'">平仓时间<input v-model="exitLocal" name="exitAt" type="datetime-local" required></label>
+                  <label v-if="form.status === 'closed'">平仓价<input :value="form.exitPrice" name="exitPrice" type="number" inputmode="decimal" step="any" required placeholder="例：0.0000…" @input="setNumericField('exitPrice', $event)"></label>
+                  <label>仓位口径<select v-model="form.positionBasis" name="positionBasis"><option value="notional">名义金额</option><option value="quantity">数量</option></select></label>
+                  <label>仓位/名义金额<input :value="form.positionSize" name="positionSize" type="number" inputmode="decimal" step="any" required placeholder="例：1000…" @input="setNumericField('positionSize', $event)"></label>
+                  <label>结算币种<select v-model="form.settlementCurrency" name="settlementCurrency"><option value="USDT">USDT</option><option value="CNY">CNY</option><option value="USD">USD</option></select></label>
+                  <label>逐笔人民币汇率<input :value="form.fxToCny" name="fxToCny" type="number" inputmode="decimal" step="any" :disabled="form.settlementCurrency === 'CNY'" required @input="setNumericField('fxToCny', $event)"></label>
+                  <label>计划风险金额<input :value="form.plannedRiskAmount" name="plannedRiskAmount" type="number" inputmode="decimal" step="any" placeholder="例：500…" @input="setNumericField('plannedRiskAmount', $event)"></label>
+                  <label>手续费税费<input :value="form.fees" name="fees" type="number" inputmode="decimal" step="any" required @input="setNumericField('fees', $event)"></label>
                 </div>
-                <label class="trade-full-field">入场理由<textarea v-model="form.entryReason" rows="3" required placeholder="为什么在这里入场？" /></label>
-                <label v-if="form.status === 'closed'" class="trade-full-field">出场理由<textarea v-model="form.exitReason" rows="3" required placeholder="为什么在这里离场？" /></label>
+                <label class="trade-full-field">入场理由<textarea v-model="form.entryReason" name="entryReason" rows="3" required placeholder="例：突破关键阻力后回踩确认…" /></label>
+                <label v-if="form.status === 'closed'" class="trade-full-field">出场理由<textarea v-model="form.exitReason" name="exitReason" rows="3" required placeholder="例：触及计划止盈位…" /></label>
               </section>
 
               <section class="trade-form-section">
                 <div class="trade-section-title"><span>03</span><h3>执行复盘</h3></div>
                 <div class="trade-form-grid">
-                  <label>执行评分<select v-model="form.executionGrade"><option :value="null">未评分</option><option value="A">A · 完全按计划</option><option value="B">B · 有瑕疵</option><option value="C">C · 明显失控</option></select></label>
-                  <label>情绪状态<input v-model="form.emotion" list="trade-emotions" placeholder="平静 / 犹豫"><datalist id="trade-emotions"><option v-for="item in emotions" :key="item.id" :value="item.label" /></datalist></label>
+                  <label>执行评分<select v-model="form.executionGrade" name="executionGrade"><option :value="null">未评分</option><option value="A">A · 完全按计划</option><option value="B">B · 有瑕疵</option><option value="C">C · 明显失控</option></select></label>
+                  <label>情绪状态<input v-model="form.emotion" name="emotion" list="trade-emotions" placeholder="例：平静 / 犹豫…"><datalist id="trade-emotions"><option v-for="item in emotions" :key="item.id" :value="item.label" /></datalist></label>
                 </div>
                 <div class="trade-tag-field">
                   <span>错误标签</span>
-                  <div><button v-for="item in errorTags" :key="item.id" type="button" :class="{ active: form.errorTags?.includes(item.label) }" @click="toggleErrorTag(item.label)">{{ item.label }}</button></div>
+                  <div><button v-for="item in errorTags" :key="item.id" type="button" :class="{ active: form.errorTags?.includes(item.label) }" :aria-pressed="form.errorTags?.includes(item.label)" @click="toggleErrorTag(item.label)">{{ item.label }}</button></div>
                 </div>
-                <label class="trade-full-field">错误复盘<textarea v-model="form.errorNotes" rows="4" placeholder="保留当时的原始判断、失误过程和触发条件" /></label>
+                <label class="trade-full-field">错误复盘<textarea v-model="form.errorNotes" name="errorNotes" rows="4" placeholder="例：保留当时的原始判断、失误过程和触发条件…" /></label>
                 <div class="trade-form-grid trade-text-grid">
-                  <label>做对了什么<textarea v-model="form.didWell" rows="4" /></label>
-                  <label>下次改进<textarea v-model="form.nextImprovement" rows="4" /></label>
+                  <label>做对了什么<textarea v-model="form.didWell" name="didWell" rows="4" /></label>
+                  <label>下次改进<textarea v-model="form.nextImprovement" name="nextImprovement" rows="4" /></label>
                 </div>
               </section>
 
               <section class="trade-form-section">
                 <div class="trade-section-title"><span>04</span><h3>行情截图</h3></div>
                 <label class="trade-upload-zone">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple @change="chooseFiles">
+                  <input name="screenshots" type="file" accept="image/jpeg,image/png,image/webp" multiple @change="chooseFiles">
                   <b>选择截图</b>
-                  <span>最多 10 张，每张不超过 15 MB；支持 JPEG、PNG、WebP</span>
+                  <span>最多 10 张，每张不超过 15&nbsp;MB；支持 JPEG、PNG、WebP</span>
                 </label>
                 <div v-if="queuedFiles.length" class="queued-files">
-                  <span v-for="(file, index) in queuedFiles" :key="`${file.name}-${index}`">{{ file.name }}<button type="button" @click="queuedFiles.splice(index, 1)">×</button></span>
+                  <span v-for="(file, index) in queuedFiles" :key="`${file.name}-${index}`">{{ file.name }}<button type="button" :aria-label="`移除 ${file.name}`" @click="queuedFiles.splice(index, 1)">×</button></span>
                 </div>
               </section>
             </div>
 
-            <aside class="trade-preview-panel">
+            <aside class="trade-preview-panel" aria-live="polite">
               <span class="eyebrow">LIVE PREVIEW</span>
               <h3>交易结果预览</h3>
               <dl>
@@ -330,10 +376,10 @@ async function save() {
           </form>
 
           <footer class="trade-modal-footer">
-            <p v-if="error" class="form-error">{{ error }}</p>
+            <p v-if="error" ref="errorElement" class="form-error" role="alert" aria-live="polite" tabindex="-1">{{ error }}</p>
             <div>
-              <button type="button" class="trading-secondary-button" @click="emit('close')">取消</button>
-              <button type="button" class="trading-primary-button" :disabled="saving" @click="save">{{ saving ? "正在保存…" : "保存交易" }}</button>
+              <button type="button" class="trading-secondary-button" @click="requestClose">取消</button>
+              <button type="submit" form="trade-form" class="trading-primary-button" :disabled="saving">{{ saving ? "正在保存…" : "保存交易" }}</button>
             </div>
           </footer>
         </section>

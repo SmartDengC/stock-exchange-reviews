@@ -17,11 +17,23 @@ type Asset = {
 };
 
 const props = defineProps<{ review: ReviewRecord }>();
+const route = useRoute();
+const router = useRouter();
 const selectedReview = ref<ReviewRecord | null>(null);
 
 function openReview(review: ReviewRecord) {
   selectedReview.value = review;
+  router.replace({ query: { ...route.query, review: review.slug } });
 }
+
+function closeReview() {
+  selectedReview.value = null;
+  router.replace({ query: { ...route.query, review: undefined } });
+}
+
+watch(() => route.query.review, (slug) => {
+  selectedReview.value = slug === props.review.slug ? props.review : null;
+}, { immediate: true });
 
 function assetFrom(table: ReturnType<typeof firstTable>, name: string, label: string, market: string): Asset {
   const row = findRow(table, name);
@@ -128,6 +140,6 @@ const driverCards = [
         </section>
       </section>
     </section>
-    <ReviewOverlay :review="selectedReview" @close="selectedReview = null" />
+    <ReviewOverlay :review="selectedReview" @close="closeReview" />
   </AppShell>
 </template>

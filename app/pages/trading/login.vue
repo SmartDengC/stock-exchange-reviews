@@ -4,6 +4,7 @@ const username = ref("");
 const password = ref("");
 const loading = ref(false);
 const error = ref("");
+const errorElement = ref<HTMLElement | null>(null);
 const { fetch: refreshSession, loggedIn } = useUserSession();
 
 useSeoMeta({
@@ -31,7 +32,9 @@ async function login() {
     await navigateTo(String(route.query.returnTo || "/"));
   } catch (cause) {
     const value = cause as { data?: { message?: string }; message?: string };
-    error.value = value.data?.message ?? value.message ?? "登录失败";
+    error.value = value.data?.message ?? value.message ?? "登录失败，请检查账号和密码后重试";
+    await nextTick();
+    errorElement.value?.focus();
   } finally {
     loading.value = false;
   }
@@ -55,21 +58,26 @@ async function login() {
         <input
           id="trading-username"
           v-model="username"
+          name="username"
           type="text"
           autocomplete="username"
-          autofocus
-          placeholder="输入账号"
+          spellcheck="false"
+          required
+          placeholder="输入账号…"
         >
         <label for="trading-password">密码</label>
         <input
           id="trading-password"
           v-model="password"
+          name="password"
           type="password"
           autocomplete="current-password"
-          placeholder="输入密码"
+          required
+          placeholder="输入密码…"
         >
-        <p v-if="error" class="form-error">{{ error }}</p>
-        <button class="trading-primary-button" type="submit" :disabled="loading || !username || !password">
+        <p v-if="error" ref="errorElement" class="form-error" role="alert" aria-live="polite" tabindex="-1">{{ error }}</p>
+        <button class="trading-primary-button" type="submit" :disabled="loading">
+          <span v-if="loading" class="button-spinner" aria-hidden="true" />
           {{ loading ? "正在验证…" : "登录" }}
         </button>
       </form>

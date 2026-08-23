@@ -1,3 +1,6 @@
+import type { MaybeRefOrGetter } from "vue";
+import { toValue } from "vue";
+
 export type ResearchReview = {
   id: string;
   kind: "daily" | "weekly";
@@ -21,13 +24,14 @@ export function toReviewRecord(r: ResearchReview) {
   return { slug: r.slug, kind: r.kind, title: r.title, dateLabel: r.dateLabel, raw: r.content, tables: [] };
 }
 
-export function useResearchReviewList(filters: ResearchReviewFilters = {}) {
+export function useResearchReviewList(filters: MaybeRefOrGetter<ResearchReviewFilters> = {}) {
   const query = computed(() => {
+    const resolved = toValue(filters);
     const params: Record<string, string> = {};
-    if (filters.kind) params.kind = filters.kind;
-    if (filters.dateFrom) params.dateFrom = filters.dateFrom;
-    if (filters.dateTo) params.dateTo = filters.dateTo;
-    if (filters.q) params.q = filters.q;
+    if (resolved.kind) params.kind = resolved.kind;
+    if (resolved.dateFrom) params.dateFrom = resolved.dateFrom;
+    if (resolved.dateTo) params.dateTo = resolved.dateTo;
+    if (resolved.q) params.q = resolved.q;
     return params;
   });
 

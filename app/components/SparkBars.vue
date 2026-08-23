@@ -18,7 +18,7 @@ const heights = computed(() => {
 
 <template>
   <span v-if="!heights.length" class="spark-empty">数据待补充</span>
-  <div v-else class="spark-bars" :aria-label="`本周走势：${values.join('、')}`">
-    <i v-for="(height, index) in heights" :key="index" :style="{ height: `${height}%` }" />
+  <div v-else class="spark-bars" role="img" :aria-label="`本周走势：${values.join('、')}`">
+    <i v-for="(height, index) in heights" :key="index" aria-hidden="true" :style="{ height: `${height}%` }" />
   </div>
 </template>

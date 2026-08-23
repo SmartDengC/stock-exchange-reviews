@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { onBeforeRouteLeave } from "vue-router";
 import type { DailyReviewInput, DailyReviewView } from "~~/shared/types/trading";
-import { errorMessage, formatMoney, formatPercent } from "~/lib/trading";
+import { errorMessage, formatMoney, formatPercent, formatTradingDate } from "~/lib/trading";
 
 const route = useRoute();
 const date = computed(() => String(route.params.date));
@@ -13,6 +14,8 @@ const { data, pending, error, refresh } = useFetch<DailyReviewView>(() => `/api/
   server: false,
 });
 const form = reactive<DailyReviewInput>({ reviewDate: date.value });
+const initialSnapshot = ref("");
+const dirty = computed(() => Boolean(initialSnapshot.value) && JSON.stringify(form) !== initialSnapshot.value);
 const marketMetrics = computed(() => ["crypto", "a_share"].map((market) => {
   const trades = (data.value?.trades ?? []).filter((trade) => trade.market === market);
   const closed = trades.filter((trade) => trade.status === "closed");
@@ -42,6 +45,7 @@ watch(data, (value) => {
     notes: value.notes,
     version: value.id ? value.version : undefined,
   });
+  initialSnapshot.value = JSON.stringify(form);
 }, { immediate: true });
 
 async function changeDate(event: Event) {
@@ -62,14 +66,24 @@ async function save() {
     saving.value = false;
   }
 }
+
+function warnBeforeUnload(event: BeforeUnloadEvent) {
+  if (!dirty.value) return;
+  event.preventDefault();
+  event.returnValue = "";
+}
+
+onMounted(() => window.addEventListener("beforeunload", warnBeforeUnload));
+onBeforeUnmount(() => window.removeEventListener("beforeunload", warnBeforeUnload));
+onBeforeRouteLeave(() => !dirty.value || window.confirm("日复盘还有未保存的修改，确定离开吗？"));
 </script>
 
 <template>
-  <TradingShell eyebrow="DAILY REVIEW" :title="`${date} 日复盘`" subtitle="把自动统计和当天真正需要改进的动作放在一起。">
-    <template #actions><input class="daily-date-picker" type="date" :value="date" @change="changeDate"></template>
+  <TradingShell eyebrow="DAILY REVIEW" :title="`${formatTradingDate(date)} 日复盘`" subtitle="把自动统计和当天真正需要改进的动作放在一起。">
+    <template #actions><input class="daily-date-picker" name="reviewDate" type="date" :value="date" aria-label="复盘日期" autocomplete="off" @change="changeDate"></template>
 
-    <div v-if="pending" class="trading-loading">正在整理当天交易…</div>
-    <div v-else-if="error" class="trading-error">{{ error.message || "读取日复盘失败" }}</div>
+    <div v-if="pending" class="trading-loading" role="status" aria-live="polite">正在整理当天交易…</div>
+    <div v-else-if="error" class="trading-error" role="alert" aria-live="polite">{{ error.message || "读取日复盘失败，请刷新页面后重试" }}</div>
     <template v-else-if="data">
       <section class="daily-metrics">
         <article><span>总笔数</span><strong>{{ data.metrics.closedTrades + data.metrics.openTrades }}</strong></article>
@@ -81,31 +95,31 @@ async function save() {
       </section>
 
       <section class="daily-layout">
-        <form class="daily-review-form" @submit.prevent="save">
+        <form class="daily-review-form" autocomplete="off" @submit.prevent="save">
           <section class="trading-panel">
             <header><div><span class="eyebrow">CONTEXT</span><h2>盘前与市场环境</h2></div></header>
-            <textarea v-model="form.marketPlan" rows="6" placeholder="今天是什么市场环境？盘前只计划做什么？" />
+            <label>盘前计划<textarea v-model="form.marketPlan" name="marketPlan" rows="6" placeholder="例：震荡市场，只做计划内的突破机会…" /></label>
           </section>
           <section class="trading-panel">
             <header><div><span class="eyebrow">REVIEW</span><h2>文字复盘</h2></div></header>
-            <label>当天交易总结<textarea v-model="form.dailySummary" rows="5" placeholder="今天整体做得怎样？" /></label>
-            <label>最满意的一笔<select v-model="form.bestTradeId"><option :value="null">未选择</option><option v-for="trade in data.trades" :key="trade.id" :value="trade.id">{{ trade.symbol }} · {{ trade.strategy }} · {{ formatMoney(trade.pnlCny) }}</option></select></label>
-            <label>最大失误与原因<textarea v-model="form.biggestMistake" rows="4" /></label>
-            <label>明日只改一件事<textarea v-model="form.tomorrowOneThing" rows="3" placeholder="只写一个可执行动作" /></label>
+            <label>当天交易总结<textarea v-model="form.dailySummary" name="dailySummary" rows="5" placeholder="例：计划内交易执行稳定…" /></label>
+            <label>最满意的一笔<select v-model="form.bestTradeId" name="bestTradeId"><option :value="null">未选择</option><option v-for="trade in data.trades" :key="trade.id" :value="trade.id">{{ trade.symbol }} · {{ trade.strategy }} · {{ formatMoney(trade.pnlCny) }}</option></select></label>
+            <label>最大失误与原因<textarea v-model="form.biggestMistake" name="biggestMistake" rows="4" /></label>
+            <label>明日只改一件事<textarea v-model="form.tomorrowOneThing" name="tomorrowOneThing" rows="3" placeholder="例：入场前等待 K 线收盘确认…" /></label>
           </section>
           <section class="trading-panel">
             <header><div><span class="eyebrow">DISCIPLINE</span><h2>纪律检查</h2></div></header>
             <div class="discipline-grid">
-              <label>是否只做计划内交易<select v-model="form.plannedOnly"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
-              <label>是否严格执行止损<select v-model="form.followedStops"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
-              <label>是否避免临盘加仓冲动<select v-model="form.avoidedImpulseAdds"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
-              <label>是否避免报复性交易<select v-model="form.avoidedRevengeTrading"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
-              <label>是否按计划离场<select v-model="form.exitedAsPlanned"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
-              <label>明日优先修正项<input v-model="form.priorityFix"></label>
+              <label>是否只做计划内交易<select v-model="form.plannedOnly" name="plannedOnly"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
+              <label>是否严格执行止损<select v-model="form.followedStops" name="followedStops"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
+              <label>是否避免临盘加仓冲动<select v-model="form.avoidedImpulseAdds" name="avoidedImpulseAdds"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
+              <label>是否避免报复性交易<select v-model="form.avoidedRevengeTrading" name="avoidedRevengeTrading"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
+              <label>是否按计划离场<select v-model="form.exitedAsPlanned" name="exitedAsPlanned"><option :value="null">未检查</option><option :value="true">是</option><option :value="false">否</option></select></label>
+              <label>明日优先修正项<input v-model="form.priorityFix" name="priorityFix"></label>
             </div>
-            <label>备注<textarea v-model="form.notes" rows="3" /></label>
+            <label>备注<textarea v-model="form.notes" name="notes" rows="3" /></label>
           </section>
-          <div class="daily-save-bar"><span>{{ status }}</span><button class="trading-primary-button" type="submit" :disabled="saving">{{ saving ? "正在保存…" : "保存日复盘" }}</button></div>
+          <div class="daily-save-bar"><span role="status" aria-live="polite">{{ status }}</span><button class="trading-primary-button" type="submit" :disabled="saving">{{ saving ? "正在保存…" : "保存日复盘" }}</button></div>
         </form>
 
         <aside class="daily-trade-rail">

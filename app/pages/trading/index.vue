@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { getDefaultTradingDateRange } from "~~/shared/trading-date-range";
 import type { TradeView, TradingDashboard } from "~~/shared/types/trading";
-import { formatMoney, formatNumber, formatPercent, marketLabel, sideLabel } from "~/lib/trading";
+import { formatMoney, formatNumber, formatPercent, formatTradingDate, marketLabel, sideLabel } from "~/lib/trading";
 
 useSeoMeta({ title: "交易总览 · 私有交易复盘", robots: "noindex, nofollow" });
 
 const defaultDateRange = getDefaultTradingDateRange();
-const from = ref(defaultDateRange.from);
-const to = ref(defaultDateRange.to);
+const route = useRoute();
+const router = useRouter();
+const from = ref(typeof route.query.from === "string" ? route.query.from : defaultDateRange.from);
+const to = ref(typeof route.query.to === "string" ? route.query.to : defaultDateRange.to);
 const formOpen = ref(false);
 const selectedTrade = ref<TradeView | null>(null);
 const editingTrade = ref<TradeView | null>(null);
@@ -18,6 +20,24 @@ const { data, pending, error, refresh } = useFetch<TradingDashboard>("/api/tradi
   server: false,
   query: computed(() => ({ from: from.value || undefined, to: to.value || undefined })),
 });
+
+watch([from, to], ([nextFrom, nextTo]) => {
+  router.replace({ query: { ...route.query, from: nextFrom || undefined, to: nextTo || undefined } });
+});
+
+watch(() => route.query.tradeId, async (tradeId) => {
+  if (typeof tradeId !== "string") {
+    selectedTrade.value = null;
+    return;
+  }
+  if (selectedTrade.value?.id === tradeId) return;
+  selectedTrade.value = await $fetch<TradeView>(`/api/trading/trades/${tradeId}`).catch(() => null);
+}, { immediate: true });
+
+function selectTrade(trade: TradeView | null) {
+  selectedTrade.value = trade;
+  router.replace({ query: { ...route.query, tradeId: trade?.id || undefined } });
+}
 
 const maxDaily = computed(() => Math.max(1, ...((data.value?.dailyPnl ?? []).map((item) => Math.abs(Number(item.pnlCny))))));
 const cumulativeSeries = computed(() => {
@@ -54,7 +74,7 @@ function newTrade() {
 }
 
 function editTrade(trade: TradeView) {
-  selectedTrade.value = null;
+  selectTrade(null);
   editingTrade.value = trade;
   cloneSource.value = null;
   formOpen.value = true;
@@ -73,14 +93,14 @@ async function reloadData() {
     </template>
 
     <section class="trading-filter-strip">
-      <label>开始日期<input v-model="from" type="date"></label>
-      <label>结束日期<input v-model="to" type="date"></label>
+      <label>开始日期<input v-model="from" name="from" type="date" autocomplete="off"></label>
+      <label>结束日期<input v-model="to" name="to" type="date" autocomplete="off"></label>
       <button v-if="from || to" type="button" @click="from = ''; to = ''">查看全部</button>
       <span>统计仅纳入已平仓交易</span>
     </section>
 
-    <div v-if="pending || (!data && !error)" class="trading-loading">正在载入交易数据…</div>
-    <div v-else-if="error" class="trading-error">{{ error.message || "交易数据库暂不可用" }}</div>
+    <div v-if="pending || (!data && !error)" class="trading-loading" role="status" aria-live="polite">正在载入交易数据…</div>
+    <div v-else-if="error" class="trading-error" role="alert" aria-live="polite">{{ error.message || "交易数据库暂不可用，请刷新页面后重试" }}</div>
     <template v-else-if="data">
       <section class="trading-kpi-grid">
         <article class="trading-kpi trading-kpi-primary">
@@ -103,7 +123,7 @@ async function reloadData() {
               <line x1="0" x2="1000" :y1="cumulativeZeroY" :y2="cumulativeZeroY" />
               <polyline :points="cumulativePolyline" />
             </svg>
-            <div><span>{{ cumulativeSeries[0]?.date }}</span><strong>{{ formatMoney(cumulativeSeries.at(-1)?.cumulative) }}</strong><span>{{ cumulativeSeries.at(-1)?.date }}</span></div>
+            <div><span>{{ formatTradingDate(cumulativeSeries[0]?.date) }}</span><strong>{{ formatMoney(cumulativeSeries.at(-1)?.cumulative) }}</strong><span>{{ formatTradingDate(cumulativeSeries.at(-1)?.date) }}</span></div>
           </div>
           <p v-else class="trading-empty">完成第一笔交易后，这里会显示累计收益路径。</p>
         </article>
@@ -118,7 +138,7 @@ async function reloadData() {
               :style="{ '--pnl-strength': Math.max(0.14, Math.abs(Number(item.pnlCny)) / maxDaily) }"
               :title="`${item.date} · ${formatMoney(item.pnlCny)}`"
             >
-              <span>{{ item.date.slice(5) }}</span><b>{{ formatMoney(item.pnlCny) }}</b><small>{{ item.count }} 笔</small>
+              <span>{{ formatTradingDate(item.date, true) }}</span><b>{{ formatMoney(item.pnlCny) }}</b><small>{{ item.count }} 笔</small>
             </div>
           </div>
           <p v-else class="trading-empty">暂无可展示的交易日。</p>
@@ -147,17 +167,17 @@ async function reloadData() {
 
         <article class="trading-panel">
           <header><div><span class="eyebrow">OPEN TRADES</span><h2>待平仓记录</h2></div><NuxtLink to="/trading/trades?status=open">全部 →</NuxtLink></header>
-          <button v-for="trade in data.openTrades" :key="trade.id" type="button" class="recent-trade-row" @click="selectedTrade = trade">
+          <button v-for="trade in data.openTrades" :key="trade.id" type="button" class="recent-trade-row" @click="selectTrade(trade)">
             <span><b>{{ trade.symbol }}</b><small>{{ marketLabel(trade.market) }} · {{ sideLabel(trade.side) }} · {{ trade.strategy }}</small></span>
-            <time>{{ trade.tradeDate }}</time>
+            <time :datetime="trade.tradeDate">{{ formatTradingDate(trade.tradeDate) }}</time>
           </button>
           <p v-if="!data.openTrades.length" class="trading-empty">没有待平仓记录。</p>
         </article>
 
         <article class="trading-panel trading-recent-panel">
           <header><div><span class="eyebrow">RECENT TRADES</span><h2>最近交易</h2></div><NuxtLink to="/trading/trades">交易台账 →</NuxtLink></header>
-          <button v-for="trade in data.recentTrades" :key="trade.id" type="button" class="recent-trade-row" @click="selectedTrade = trade">
-            <span><b>{{ trade.symbol }}</b><small>{{ trade.tradeDate }} · {{ trade.strategy }} · {{ trade.executionGrade ?? "未评分" }}</small></span>
+          <button v-for="trade in data.recentTrades" :key="trade.id" type="button" class="recent-trade-row" @click="selectTrade(trade)">
+            <span><b>{{ trade.symbol }}</b><small>{{ formatTradingDate(trade.tradeDate) }} · {{ trade.strategy }} · {{ trade.executionGrade ?? "未评分" }}</small></span>
             <strong :class="{ positive: trade.isWinning, negative: trade.isWinning === false }">{{ formatMoney(trade.pnlCny) }}</strong>
           </button>
           <p v-if="!data.recentTrades.length" class="trading-empty">还没有交易记录。</p>
@@ -175,6 +195,6 @@ async function reloadData() {
     </TradingShell>
 
     <TradeFormModal :open="formOpen" :trade="editingTrade" :clone-source="cloneSource" @close="formOpen = false" @saved="reloadData" />
-    <TradeDetailModal :trade="selectedTrade" @close="selectedTrade = null" @edit="editTrade" @deleted="reloadData" @refresh="reloadData" @updated="selectedTrade = $event" />
+    <TradeDetailModal :trade="selectedTrade" @close="selectTrade(null)" @edit="editTrade" @deleted="reloadData" @refresh="reloadData" @updated="selectedTrade = $event" />
   </div>
 </template>

@@ -48,18 +48,18 @@ useSeoMeta({
   </AppShell>
 
   <AppShell v-else-if="pending" module="research" title="加载中">
-    <main class="loading-state">
-      <div class="spinner" />
+    <section class="loading-state" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true" />
       <p>正在读取复盘…</p>
-    </main>
+    </section>
   </AppShell>
 
   <AppShell v-else module="research" title="未找到这份复盘">
-    <main class="empty-state">
+    <section class="empty-state">
       <p class="eyebrow">MARKET DIARY / 404</p>
       <h1>未找到这份复盘</h1>
       <p>{{ fetchError?.message || "该复盘可能已被删除或编号不正确。" }}</p>
       <NuxtLink to="/" class="secondary-link">返回研究终端</NuxtLink>
-    </main>
+    </section>
   </AppShell>
 </template>

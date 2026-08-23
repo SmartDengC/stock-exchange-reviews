@@ -1,6 +1,59 @@
 import type { TradeInput, TradeView } from "~~/shared/types/trading";
 import { marketLabel as sharedMarketLabel, sideLabel as sharedSideLabel, statusLabel as sharedStatusLabel } from "~~/shared/labels";
 
+const tradingDateInputFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Shanghai",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const tradingDateDisplayFormatter = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: "Asia/Shanghai",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+
+const compactTradingDateDisplayFormatter = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: "Asia/Shanghai",
+  month: "numeric",
+  day: "numeric",
+});
+
+const tradingDateTimeDisplayFormatter = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: "Asia/Shanghai",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const percentFormatter = new Intl.NumberFormat("zh-CN", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+export function currentTradingDate(now = new Date()) {
+  return tradingDateInputFormatter.format(now);
+}
+
+export function formatTradingDate(value: string | null | undefined, compact = false) {
+  if (!value) return "—";
+  const date = new Date(`${value}T00:00:00+08:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return (compact ? compactTradingDateDisplayFormatter : tradingDateDisplayFormatter).format(date);
+}
+
+export function formatTradingDateTime(value: string | null | undefined) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return tradingDateTimeDisplayFormatter.format(date);
+}
+
 export function formatMoney(value: string | number | null | undefined, currency = "CNY") {
   if (value === null || value === undefined || value === "") return "—";
   return new Intl.NumberFormat("zh-CN", {
@@ -12,7 +65,7 @@ export function formatMoney(value: string | number | null | undefined, currency 
 
 export function formatPercent(value: number | null | undefined) {
   if (value === null || value === undefined) return "—";
-  return `${(value * 100).toFixed(1)}%`;
+  return percentFormatter.format(value);
 }
 
 export function formatNumber(value: string | number | null | undefined, digits = 2) {
@@ -55,7 +108,7 @@ export function blankTrade(defaultRate = "7.2"): TradeInput {
   const now = new Date();
   return {
     status: "closed",
-    tradeDate: now.toISOString().slice(0, 10),
+    tradeDate: currentTradingDate(now),
     instrumentCode: "",
     symbol: "",
     market: "crypto",

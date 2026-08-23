@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Modal } from "@arco-design/web-vue";
+import { useAccessibleDialog } from "~/composables/use-accessible-dialog";
 import { useSessionTimeout } from "~/composables/use-session-timeout";
+import { currentTradingDate } from "~/lib/trading";
 
 type ModuleKey = "research" | "trading";
 
@@ -17,13 +19,11 @@ const navOpen = ref(false);
 const navCollapsed = ref(false);
 const userMenuOpen = ref(false);
 const settingsOpen = ref(false);
-
-const today = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Shanghai",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-}).format(new Date());
+const today = ref("");
+const navCloseButton = ref<HTMLElement | null>(null);
+const settingsCloseButton = ref<HTMLElement | null>(null);
+const userMenuButton = ref<HTMLElement | null>(null);
+const userMenuPanel = ref<HTMLElement | null>(null);
 
 const researchLinks = [
   { to: "/research/rules", label: "交易规则", match: "rules", icon: "rules" },
@@ -32,13 +32,13 @@ const researchLinks = [
   { to: "/research/daily", label: "日复盘", match: "daily", icon: "daily" },
 ];
 
-const tradingLinks = [
+const tradingLinks = computed(() => [
   { to: "/trading", label: "交易总览", icon: "overview" },
   { to: "/trading/trades", label: "交易记录", icon: "ledger" },
-  { to: `/trading/daily/${today}`, label: "每日复盘", base: "/trading/daily", icon: "journal" },
+  { to: today.value ? `/trading/daily/${today.value}` : "/trading", label: "每日复盘", base: "/trading/daily", icon: "journal" },
   { to: "/trading/analytics", label: "统计洞察", icon: "analytics" },
   { to: "/trading/settings", label: "设置与导出", icon: "settings" },
-];
+]);
 
 const activeModule = computed<ModuleKey>(() => route.path.startsWith("/trading") ? "trading" : props.module);
 const userName = computed(() => user.value?.username ?? "已登录用户");
@@ -60,6 +60,7 @@ const sessionTimeout = useSessionTimeout(() => {
 });
 
 onMounted(() => {
+  today.value = currentTradingDate();
   navCollapsed.value = localStorage.getItem("market-diary:nav-collapsed") === "true";
   sessionTimeout.init();
 });
@@ -84,9 +85,42 @@ function toggleNavCollapsed() {
   navCollapsed.value = !navCollapsed.value;
 }
 
-function openSettings() {
-  settingsOpen.value = true;
+async function openSettings() {
   userMenuOpen.value = false;
+  await nextTick();
+  userMenuButton.value?.focus();
+  settingsOpen.value = true;
+}
+
+function closeSettings() {
+  settingsOpen.value = false;
+}
+
+const { dialogRef: navDialogRef, onDialogKeydown: onNavDialogKeydown } = useAccessibleDialog(navOpen, closeNav, navCloseButton, false);
+const { dialogRef: settingsDialogRef, onDialogKeydown: onSettingsDialogKeydown } = useAccessibleDialog(settingsOpen, closeSettings, settingsCloseButton);
+
+watch(userMenuOpen, async (open) => {
+  if (!open) return;
+  await nextTick();
+  userMenuPanel.value?.querySelector<HTMLElement>("[role='menuitem']")?.focus();
+});
+
+function onUserMenuKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    userMenuOpen.value = false;
+    userMenuButton.value?.focus();
+    return;
+  }
+  if (!userMenuPanel.value || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const items = [...userMenuPanel.value.querySelectorAll<HTMLElement>("[role='menuitem']")];
+  if (!items.length) return;
+  const current = items.indexOf(document.activeElement as HTMLElement);
+  if (event.key === "Home") items[0]?.focus();
+  else if (event.key === "End") items.at(-1)?.focus();
+  else if (event.key === "ArrowDown") items[(current + 1 + items.length) % items.length]?.focus();
+  else items[(current - 1 + items.length) % items.length]?.focus();
 }
 
 function researchActive(match: string) {
@@ -116,10 +150,17 @@ async function logout() {
       <span />
     </button>
 
-    <div v-if="navOpen" class="unified-nav-backdrop" @click="navOpen = false" />
-    <div v-if="settingsOpen" class="settings-backdrop" @click="settingsOpen = false" />
+    <button v-if="navOpen" type="button" class="unified-nav-backdrop" aria-label="关闭导航" @click="closeNav" />
 
-    <aside :class="['unified-side-rail', { 'is-open': navOpen, 'is-collapsed': navCollapsed }]" aria-label="市场日记导航">
+    <aside
+      ref="navDialogRef"
+      :class="['unified-side-rail', { 'is-open': navOpen, 'is-collapsed': navCollapsed }]"
+      aria-label="市场日记导航"
+      :aria-modal="navOpen || undefined"
+      :role="navOpen ? 'dialog' : undefined"
+      :tabindex="navOpen ? -1 : undefined"
+      @keydown="onNavDialogKeydown"
+    >
       <div class="unified-side-head">
         <NuxtLink class="brand" to="/" @click="closeNav">
           <span class="brand-mark">M</span>
@@ -135,7 +176,7 @@ async function logout() {
         >
           <span aria-hidden="true" />
         </button>
-        <button type="button" class="unified-nav-close" aria-label="关闭导航" @click="navOpen = false">
+        <button ref="navCloseButton" type="button" class="unified-nav-close" aria-label="关闭导航" @click="closeNav">
           <span />
           <span />
         </button>
@@ -152,6 +193,7 @@ async function logout() {
             :key="item.to"
             :to="item.to"
             :class="{ active: researchActive(item.match) }"
+            :aria-current="researchActive(item.match) ? 'page' : undefined"
             :title="navCollapsed ? item.label : undefined"
             @click="closeNav"
           >
@@ -170,6 +212,7 @@ async function logout() {
             :key="item.to"
             :to="item.to"
             :class="{ active: tradingActive(item) }"
+            :aria-current="tradingActive(item) ? 'page' : undefined"
             :title="navCollapsed ? item.label : undefined"
             @click="closeNav"
           >
@@ -180,7 +223,7 @@ async function logout() {
       </nav>
 
       <div class="side-user-dock">
-        <div v-if="userMenuOpen" class="user-menu-panel" role="menu">
+        <div v-if="userMenuOpen" ref="userMenuPanel" class="user-menu-panel" role="menu" @keydown="onUserMenuKeydown">
           <div class="user-menu-head">
             <span class="user-avatar">{{ userInitial }}</span>
             <span><strong>{{ userName }}</strong><small>市场日记账户</small></span>
@@ -206,6 +249,7 @@ async function logout() {
         </div>
 
         <button
+          ref="userMenuButton"
           type="button"
           class="user-card-button"
           :aria-expanded="userMenuOpen"
@@ -220,38 +264,51 @@ async function logout() {
       </div>
     </aside>
 
-    <section v-if="settingsOpen" class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="app-settings-title">
-      <header>
-        <div>
-          <p class="site-brand">SETTINGS</p>
-          <h2 id="app-settings-title">偏好设置</h2>
-        </div>
-        <button type="button" class="settings-close" aria-label="关闭设置" @click="settingsOpen = false">
-          <span />
-          <span />
-        </button>
-      </header>
-      <div class="settings-section">
-        <div>
-          <h3>颜色模式</h3>
-          <p>选择日常复盘时更舒服的界面颜色。</p>
-        </div>
-        <div class="theme-choice-grid" role="group" aria-label="颜色模式">
-          <button type="button" :class="{ active: theme === 'light' }" @click="setTheme('light')">
-            <span class="theme-swatch light" aria-hidden="true" />
-            <strong>浅色</strong>
-            <small>明亮背景，适合白天整理资料。</small>
-          </button>
-          <button type="button" :class="{ active: theme === 'dark' }" @click="setTheme('dark')">
-            <span class="theme-swatch dark" aria-hidden="true" />
-            <strong>深色</strong>
-            <small>低亮度背景，适合夜间复盘。</small>
-          </button>
-        </div>
+    <Teleport to="body">
+      <div v-if="settingsOpen" class="settings-layer">
+        <button type="button" class="settings-backdrop" aria-label="关闭设置" @click="closeSettings" />
+        <section
+          ref="settingsDialogRef"
+          class="settings-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="app-settings-title"
+          tabindex="-1"
+          @keydown="onSettingsDialogKeydown"
+        >
+          <header>
+            <div>
+              <p class="site-brand">SETTINGS</p>
+              <h2 id="app-settings-title">偏好设置</h2>
+            </div>
+            <button ref="settingsCloseButton" type="button" class="settings-close" aria-label="关闭设置" @click="closeSettings">
+              <span />
+              <span />
+            </button>
+          </header>
+          <div class="settings-section">
+            <div>
+              <h3>颜色模式</h3>
+              <p>选择日常复盘时更舒服的界面颜色。</p>
+            </div>
+            <div class="theme-choice-grid" role="group" aria-label="颜色模式">
+              <button type="button" :class="{ active: theme === 'light' }" :aria-pressed="theme === 'light'" @click="setTheme('light')">
+                <span class="theme-swatch light" aria-hidden="true" />
+                <strong>浅色</strong>
+                <small>明亮背景，适合白天整理资料。</small>
+              </button>
+              <button type="button" :class="{ active: theme === 'dark' }" :aria-pressed="theme === 'dark'" @click="setTheme('dark')">
+                <span class="theme-swatch dark" aria-hidden="true" />
+                <strong>深色</strong>
+                <small>低亮度背景，适合夜间复盘。</small>
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
-    </section>
+    </Teleport>
 
-    <section class="unified-workspace">
+    <section class="unified-workspace" :inert="navOpen || undefined">
       <header class="workspace-header">
         <div>
           <div class="site-brand">个人研究与交易闭环</div>

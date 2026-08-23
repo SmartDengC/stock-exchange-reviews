@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TradingRulesDocument } from "~/lib/trading-rules";
+import { formatTradingDate } from "~/lib/trading";
 
 defineProps<{ document: TradingRulesDocument }>();
 
@@ -15,7 +16,7 @@ function ruleNumber(index: number) {
         <p class="trading-rules-eyebrow">TRADING DISCIPLINE / MUST FOLLOW</p>
         <h2 id="trading-rules-title">{{ document.title }}</h2>
         <p class="trading-rules-updated">
-          <span v-if="document.updatedAt">最后更新：{{ document.updatedAt }}</span>
+          <span v-if="document.updatedAt">最后更新：{{ formatTradingDate(document.updatedAt) }}</span>
           <span>共 {{ document.rules.length }} 条</span>
         </p>
       </div>

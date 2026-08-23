@@ -13,7 +13,7 @@ const filters = computed(() => ({
   dateTo: dateTo.value || undefined,
 }));
 
-const { data: reviews, status, refresh } = useResearchReviewList(filters);
+const { data: reviews, status } = useResearchReviewList(filters);
 
 function syncUrl() {
   const query: Record<string, string> = {};
@@ -44,16 +44,16 @@ useSeoMeta({
 
     <section class="research-filter-bar panel">
       <div class="filter-row">
-        <input v-model="searchQuery" type="text" placeholder="搜索标题或内容..." class="filter-input" @input="syncUrl">
-        <input v-model="dateFrom" type="date" class="filter-date" @change="syncUrl">
+        <input v-model="searchQuery" name="q" type="search" placeholder="例：流动性…" class="filter-input" aria-label="搜索标题或内容" autocomplete="off" @input="syncUrl">
+        <input v-model="dateFrom" name="dateFrom" type="date" class="filter-date" aria-label="开始日期" autocomplete="off" @change="syncUrl">
         <span class="filter-sep">—</span>
-        <input v-model="dateTo" type="date" class="filter-date" @change="syncUrl">
+        <input v-model="dateTo" name="dateTo" type="date" class="filter-date" aria-label="结束日期" autocomplete="off" @change="syncUrl">
         <button v-if="searchQuery || dateFrom || dateTo" type="button" class="filter-clear" @click="clearFilters">清除</button>
       </div>
     </section>
 
     <section class="research-archive-page panel">
-      <div v-if="status === 'pending'" class="loading-state">加载中...</div>
+      <div v-if="status === 'pending'" class="loading-state" role="status" aria-live="polite">加载中…</div>
       <div v-else-if="reviews?.length" class="research-archive-grid">
         <NuxtLink
           v-for="item in reviews"

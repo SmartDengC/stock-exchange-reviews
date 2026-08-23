@@ -45,6 +45,7 @@ export default defineNuxtConfig({
       meta: [
         { name: "description", content: "个人市场复盘与周度研究终端" },
         { name: "color-scheme", content: "light dark" },
+        { name: "theme-color", content: "#f4f6f1" },
         { property: "og:title", content: "市场日记 · 研究终端" },
         { property: "og:description", content: "个人市场研究、日报周报与私有交易复盘终端" },
         { property: "og:image", content: "/og.png" },

@@ -8,7 +8,7 @@ const tokens = computed(() => parseInline(props.text));
 <template>
   <template v-for="(token, index) in tokens" :key="index">
     <strong v-if="token.kind === 'strong'">{{ token.text }}</strong>
-    <code v-else-if="token.kind === 'code'">{{ token.text }}</code>
+    <code v-else-if="token.kind === 'code'" translate="no">{{ token.text }}</code>
     <a
       v-else-if="token.kind === 'link'"
       class="markdown-link"

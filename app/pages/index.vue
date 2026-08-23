@@ -25,14 +25,14 @@ useSeoMeta({
 <template>
   <Dashboard v-if="review" :review="review" />
   <AppShell v-else module="research" title="周度研究终端">
-    <main v-if="status === 'pending'" class="loading-state">
-      <div class="spinner" />
-      <p>加载中...</p>
-    </main>
-    <main v-else class="empty-state">
+    <section v-if="status === 'pending'" class="loading-state" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true" />
+      <p>加载中…</p>
+    </section>
+    <section v-else class="empty-state">
       <p class="eyebrow">MARKET DIARY</p>
       <h1>尚未发现市场复盘</h1>
       <p>请前往「复盘总览」新建周复盘数据。</p>
-    </main>
+    </section>
   </AppShell>
 </template>

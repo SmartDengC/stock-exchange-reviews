@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { TradeView } from "~~/shared/types/trading";
+import { useAccessibleDialog } from "~/composables/use-accessible-dialog";
 import {
   errorMessage,
   formatMoney,
   formatNumber,
+  formatTradingDate,
+  formatTradingDateTime,
   marketLabel,
   sideLabel,
   statusLabel,
@@ -20,7 +23,23 @@ const emit = defineEmits<{
 
 const imageIndex = ref<number | null>(null);
 const deleting = ref(false);
+const attachmentAction = ref("");
 const error = ref("");
+const closeButton = ref<HTMLElement | null>(null);
+const lightboxCloseButton = ref<HTMLElement | null>(null);
+const visible = computed(() => Boolean(props.trade));
+const lightboxVisible = computed(() => visible.value && imageIndex.value !== null);
+
+function closeDetail() {
+  emit("close");
+}
+
+function closeLightbox() {
+  imageIndex.value = null;
+}
+
+const { dialogRef: detailDialogRef, onDialogKeydown: onDetailDialogKeydown } = useAccessibleDialog(visible, closeDetail, closeButton);
+const { dialogRef: lightboxDialogRef, onDialogKeydown: onLightboxDialogKeydown } = useAccessibleDialog(lightboxVisible, closeLightbox, lightboxCloseButton);
 
 watch(() => props.trade?.id, () => {
   imageIndex.value = null;
@@ -48,40 +67,56 @@ async function removeTrade() {
 
 async function setCover(id: string) {
   const trade = props.trade;
-  if (!trade) return;
-  await $fetch(`/api/trading/trades/${trade.id}/attachments/${id}`, {
-    method: "PATCH",
-    body: { isCover: true },
+  if (!trade || attachmentAction.value) return;
+  await updateAttachment("cover", trade.id, async () => {
+    await $fetch(`/api/trading/trades/${trade.id}/attachments/${id}`, {
+      method: "PATCH",
+      body: { isCover: true },
+    });
   });
-  await refreshTrade(trade.id);
 }
 
 async function removeAttachment(id: string) {
   const trade = props.trade;
-  if (!trade || !window.confirm("确定删除这张截图吗？")) return;
-  await $fetch(`/api/trading/trades/${trade.id}/attachments/${id}`, { method: "DELETE" });
-  await refreshTrade(trade.id);
+  if (!trade || attachmentAction.value || !window.confirm("确定删除这张截图吗？")) return;
+  await updateAttachment("remove", trade.id, async () => {
+    await $fetch(`/api/trading/trades/${trade.id}/attachments/${id}`, { method: "DELETE" });
+  });
 }
 
 async function moveAttachment(index: number, direction: -1 | 1) {
   const trade = props.trade;
-  if (!trade) return;
+  if (!trade || attachmentAction.value) return;
   const targetIndex = index + direction;
   if (targetIndex < 0 || targetIndex >= trade.attachments.length) return;
   const current = trade.attachments[index];
   const target = trade.attachments[targetIndex];
   if (!current || !target) return;
-  await Promise.all([
-    $fetch(`/api/trading/trades/${trade.id}/attachments/${current.id}`, {
-      method: "PATCH",
-      body: { sortOrder: target.sortOrder },
-    }),
-    $fetch(`/api/trading/trades/${trade.id}/attachments/${target.id}`, {
-      method: "PATCH",
-      body: { sortOrder: current.sortOrder },
-    }),
-  ]);
-  await refreshTrade(trade.id);
+  await updateAttachment("move", trade.id, async () => {
+    await Promise.all([
+      $fetch(`/api/trading/trades/${trade.id}/attachments/${current.id}`, {
+        method: "PATCH",
+        body: { sortOrder: target.sortOrder },
+      }),
+      $fetch(`/api/trading/trades/${trade.id}/attachments/${target.id}`, {
+        method: "PATCH",
+        body: { sortOrder: current.sortOrder },
+      }),
+    ]);
+  });
+}
+
+async function updateAttachment(action: string, tradeId: string, update: () => Promise<void>) {
+  attachmentAction.value = action;
+  error.value = "";
+  try {
+    await update();
+    await refreshTrade(tradeId);
+  } catch (cause) {
+    error.value = `${errorMessage(cause)}，请重试`;
+  } finally {
+    attachmentAction.value = "";
+  }
 }
 
 async function refreshTrade(id: string) {
@@ -94,12 +129,21 @@ async function refreshTrade(id: string) {
 <template>
   <Teleport to="body">
     <Transition name="review-overlay">
-      <div v-if="trade" class="trade-modal-backdrop" @click.self="emit('close')">
-        <section class="trade-detail-modal" role="dialog" aria-modal="true">
+      <div v-if="trade" class="trade-modal-backdrop">
+        <button type="button" class="trade-modal-dismiss" aria-label="关闭交易详情" @click="closeDetail" />
+        <section
+          ref="detailDialogRef"
+          class="trade-detail-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="trade-detail-title"
+          tabindex="-1"
+          @keydown="onDetailDialogKeydown"
+        >
           <header class="trade-modal-header">
             <div>
-              <span class="eyebrow">{{ marketLabel(trade.market) }} / {{ trade.tradeDate }}</span>
-              <h2>{{ trade.symbol }} <small>{{ trade.instrumentCode }}</small></h2>
+              <span class="eyebrow">{{ marketLabel(trade.market) }} / {{ formatTradingDate(trade.tradeDate) }}</span>
+              <h2 id="trade-detail-title">{{ trade.symbol }} <small>{{ trade.instrumentCode }}</small></h2>
               <div class="trade-detail-tags">
                 <span :class="`status-${trade.status}`">{{ statusLabel(trade.status) }}</span>
                 <span>{{ sideLabel(trade.side) }}</span>
@@ -107,7 +151,7 @@ async function refreshTrade(id: string) {
                 <span>{{ trade.timeframe }}</span>
               </div>
             </div>
-            <button type="button" class="trade-modal-close" aria-label="关闭" @click="emit('close')">×</button>
+            <button ref="closeButton" type="button" class="trade-modal-close" aria-label="关闭" @click="closeDetail">×</button>
           </header>
 
           <div class="trade-detail-body">
@@ -130,7 +174,7 @@ async function refreshTrade(id: string) {
                 <h3>入场</h3>
                 <p>{{ trade.entryReason }}</p>
                 <dl>
-                  <div><dt>时间</dt><dd>{{ new Date(trade.entryAt).toLocaleString("zh-CN") }}</dd></div>
+                  <div><dt>时间</dt><dd>{{ formatTradingDateTime(trade.entryAt) }}</dd></div>
                   <div><dt>价格</dt><dd>{{ formatNumber(trade.entryPrice, 8) }}</dd></div>
                   <div><dt>仓位</dt><dd>{{ formatNumber(trade.positionSize, 4) }} · {{ trade.positionBasis === "quantity" ? "数量" : "名义金额" }}</dd></div>
                 </dl>
@@ -140,7 +184,7 @@ async function refreshTrade(id: string) {
                 <h3>出场</h3>
                 <p>{{ trade.exitReason ?? "这笔交易尚未平仓。" }}</p>
                 <dl>
-                  <div><dt>时间</dt><dd>{{ trade.exitAt ? new Date(trade.exitAt).toLocaleString("zh-CN") : "—" }}</dd></div>
+                  <div><dt>时间</dt><dd>{{ formatTradingDateTime(trade.exitAt) }}</dd></div>
                   <div><dt>价格</dt><dd>{{ formatNumber(trade.exitPrice, 8) }}</dd></div>
                   <div><dt>手续费</dt><dd>{{ formatNumber(trade.fees, 4) }} {{ trade.settlementCurrency }}</dd></div>
                 </dl>
@@ -162,34 +206,49 @@ async function refreshTrade(id: string) {
               </div>
               <div v-if="trade.attachments.length" class="trade-gallery">
                 <figure v-for="(image, index) in trade.attachments" :key="image.id">
-                  <button type="button" @click="imageIndex = index"><img :src="image.fileUrl" :alt="image.fileName"></button>
+                  <button type="button" @click="imageIndex = index"><img :src="image.fileUrl" :alt="image.fileName" :width="image.width ?? 1600" :height="image.height ?? 900" loading="lazy"></button>
                   <figcaption>
                     <span>{{ image.isCover ? "封面" : image.fileName }}</span>
                     <div>
-                      <button v-if="index > 0" type="button" aria-label="前移截图" @click="moveAttachment(index, -1)">←</button>
-                      <button v-if="index < trade.attachments.length - 1" type="button" aria-label="后移截图" @click="moveAttachment(index, 1)">→</button>
-                      <button v-if="!image.isCover" type="button" @click="setCover(image.id)">设封面</button>
-                      <button type="button" @click="removeAttachment(image.id)">删除</button>
+                      <button v-if="index > 0" type="button" :disabled="Boolean(attachmentAction)" aria-label="前移截图" @click="moveAttachment(index, -1)">←</button>
+                      <button v-if="index < trade.attachments.length - 1" type="button" :disabled="Boolean(attachmentAction)" aria-label="后移截图" @click="moveAttachment(index, 1)">→</button>
+                      <button v-if="!image.isCover" type="button" :disabled="Boolean(attachmentAction)" @click="setCover(image.id)">{{ attachmentAction === "cover" ? "处理中…" : "设封面" }}</button>
+                      <button type="button" :disabled="Boolean(attachmentAction)" @click="removeAttachment(image.id)">{{ attachmentAction === "remove" ? "正在删除…" : "删除" }}</button>
                     </div>
                   </figcaption>
                 </figure>
               </div>
               <p v-else class="trading-empty">这笔交易还没有截图。</p>
             </section>
-            <p v-if="error" class="form-error">{{ error }}</p>
+            <p v-if="error" class="form-error" role="alert" aria-live="polite">{{ error }}</p>
           </div>
 
           <footer class="trade-modal-footer">
-            <button type="button" class="trading-danger-button" :disabled="deleting" @click="removeTrade">移入回收状态</button>
+            <button type="button" class="trading-danger-button" :disabled="deleting" @click="removeTrade">{{ deleting ? "正在处理…" : "移入回收状态" }}</button>
             <button type="button" class="trading-primary-button" @click="emit('edit', trade)">编辑交易</button>
           </footer>
         </section>
       </div>
     </Transition>
 
-    <div v-if="trade && imageIndex !== null" class="trade-lightbox" @click="imageIndex = null">
-      <button type="button" aria-label="关闭原图" @click="imageIndex = null">×</button>
-      <img :src="trade.attachments[imageIndex]?.fileUrl" :alt="trade.attachments[imageIndex]?.fileName">
-    </div>
+    <section
+      v-if="trade && imageIndex !== null"
+      ref="lightboxDialogRef"
+      class="trade-lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label="查看行情截图原图"
+      tabindex="-1"
+      @keydown="onLightboxDialogKeydown"
+    >
+      <button type="button" class="trade-lightbox-dismiss" aria-hidden="true" tabindex="-1" @click="closeLightbox" />
+      <button ref="lightboxCloseButton" type="button" class="trade-lightbox-close" aria-label="关闭原图" @click="closeLightbox">×</button>
+      <img
+        :src="trade.attachments[imageIndex]?.fileUrl"
+        :alt="trade.attachments[imageIndex]?.fileName"
+        :width="trade.attachments[imageIndex]?.width ?? 1600"
+        :height="trade.attachments[imageIndex]?.height ?? 900"
+      >
+    </section>
   </Teleport>
 </template>
