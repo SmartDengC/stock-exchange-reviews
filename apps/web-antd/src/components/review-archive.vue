@@ -1,0 +1,130 @@
+<script lang="ts" setup>
+import type { ResearchReview } from '#/types/research';
+
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+
+import {
+  Button,
+  Card,
+  DatePicker,
+  Empty,
+  Input,
+  List,
+  ListItem,
+  ListItemMeta,
+  Result,
+  Skeleton,
+  Tag,
+} from 'ant-design-vue';
+
+import { listResearchReviews } from '#/api';
+import { errorMessage } from '#/lib/trading';
+
+const props = defineProps<{ kind: 'daily' | 'weekly' }>();
+const route = useRoute();
+const router = useRouter();
+const reviews = ref<ResearchReview[]>([]);
+const loading = ref(true);
+const error = ref('');
+const query = ref(typeof route.query.q === 'string' ? route.query.q : '');
+const dateFrom = ref(
+  typeof route.query.dateFrom === 'string' ? route.query.dateFrom : '',
+);
+const dateTo = ref(
+  typeof route.query.dateTo === 'string' ? route.query.dateTo : '',
+);
+
+const kindLabel = computed(() => (props.kind === 'weekly' ? '周' : '日'));
+
+async function refresh() {
+  loading.value = true;
+  error.value = '';
+  try {
+    reviews.value = await listResearchReviews({
+      dateFrom: dateFrom.value || undefined,
+      dateTo: dateTo.value || undefined,
+      kind: props.kind,
+      q: query.value || undefined,
+    });
+    await router.replace({
+      query: {
+        dateFrom: dateFrom.value || undefined,
+        dateTo: dateTo.value || undefined,
+        q: query.value || undefined,
+      },
+    });
+  } catch (error_) {
+    error.value = errorMessage(error_);
+  } finally {
+    loading.value = false;
+  }
+}
+
+function clearFilters() {
+  query.value = '';
+  dateFrom.value = '';
+  dateTo.value = '';
+  return refresh();
+}
+
+onMounted(refresh);
+</script>
+
+<template>
+  <PageFrame
+    :title="`${kindLabel}复盘归档`"
+    :subtitle="`${reviews.length} 篇${kindLabel}度研究，支持按日期和关键词筛选。`"
+  >
+    <template #actions>
+      <Button type="primary" @click="router.push(`/research/edit/${kind}`)">
+        新建{{ kindLabel }}复盘
+      </Button>
+    </template>
+
+    <Card class="terminal-panel filter-panel" :bordered="false">
+      <div class="filters-grid">
+        <Input.Search
+          v-model:value="query"
+          allow-clear
+          placeholder="搜索标题或正文"
+          @search="refresh"
+        />
+        <DatePicker
+          v-model:value="dateFrom"
+          value-format="YYYY-MM-DD"
+          placeholder="开始日期"
+          @change="refresh"
+        />
+        <DatePicker
+          v-model:value="dateTo"
+          value-format="YYYY-MM-DD"
+          placeholder="结束日期"
+          @change="refresh"
+        />
+        <Button v-if="query || dateFrom || dateTo" @click="clearFilters">清除筛选</Button>
+      </div>
+    </Card>
+
+    <Card class="terminal-panel archive-panel" :bordered="false">
+      <Skeleton v-if="loading" active :paragraph="{ rows: 6 }" />
+      <Result v-else-if="error" status="error" title="读取复盘失败" :sub-title="error">
+        <template #extra><Button @click="refresh">重试</Button></template>
+      </Result>
+      <List v-else-if="reviews.length > 0" :data-source="reviews" item-layout="horizontal">
+        <template #renderItem="{ item }: { item: ResearchReview }">
+          <ListItem class="archive-item" @click="router.push(`/report/${item.kind}/${item.slug}`)">
+            <ListItemMeta :description="item.dateLabel">
+              <template #title>
+                <span>{{ item.title }}</span>
+              </template>
+              <template #avatar><Tag>{{ item.slug }}</Tag></template>
+            </ListItemMeta>
+            <Button type="link">阅读</Button>
+          </ListItem>
+        </template>
+      </List>
+      <Empty v-else :description="`暂无${kindLabel}复盘数据`" />
+    </Card>
+  </PageFrame>
+</template>

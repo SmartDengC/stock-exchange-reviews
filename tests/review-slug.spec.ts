@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { generateReviewSlug } from "~/lib/reviews";
+
+import { generateReviewSlug } from "#/lib/reviews";
 
 describe("generateReviewSlug", () => {
-  it("daily 从日期标签生成补零 slug（匹配服务端 ^\\d{4}-\\d{2}-\\d{2}$ 校验）", () => {
+  it(String.raw`daily 从日期标签生成补零 slug（匹配服务端 ^\d{4}-\d{2}-\d{2}$ 校验）`, () => {
     expect(generateReviewSlug("daily", "2026年8月14日（周五）")).toBe("2026-08-14");
     expect(generateReviewSlug("daily", "2026年8月1日")).toBe("2026-08-01");
     expect(generateReviewSlug("daily", "2026-08-14")).toBe("2026-08-14");

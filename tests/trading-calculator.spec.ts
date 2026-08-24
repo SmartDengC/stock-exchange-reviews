@@ -1,6 +1,8 @@
+import type { TradeInput } from "#/shared/types/trading";
+
 import { describe, expect, it } from "vitest";
-import { calculateTrade } from "../shared/trading-calculator";
-import type { TradeInput } from "../shared/types/trading";
+
+import { calculateTrade } from "#/shared/trading-calculator";
 
 function trade(overrides: Partial<TradeInput> = {}): TradeInput {
   return {

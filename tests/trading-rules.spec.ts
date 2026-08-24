@@ -1,7 +1,9 @@
 import { mount } from "@vue/test-utils";
+
 import { describe, expect, it } from "vitest";
-import TradingRulesPanel from "~/components/TradingRulesPanel.vue";
-import { parseTradingRules, tradingRules } from "~/lib/trading-rules";
+
+import TradingRulesPanel from "#/components/trading-rules-panel.vue";
+import { parseTradingRules, tradingRules } from "#/lib/trading-rules";
 
 describe("trading rules", () => {
   it("parses the title, update date, and all rule sections", () => {
@@ -47,10 +49,10 @@ describe("trading rules", () => {
       props: { document: tradingRules },
     });
 
-    expect(wrapper.get("#trading-rules-title").text()).toBe("Boss 交易规则");
-    expect(wrapper.get(".trading-rules-required").text()).toContain("每笔交易前必读");
-    expect(wrapper.get(".trading-rules-updated").text()).toContain("共 9 条");
-    expect(wrapper.findAll(".trading-rule")).toHaveLength(9);
+    expect(wrapper.get(".rules-heading h2").text()).toBe("Boss 交易规则");
+    expect(wrapper.get(".ant-alert").text()).toContain("每笔交易前必读");
+    expect(wrapper.get(".rules-heading").text()).toContain("9 条规则");
+    expect(wrapper.findAll(".rules-grid li")).toHaveLength(9);
     expect(wrapper.text()).toContain("市场的钱永远赚不完，但身体只有一个");
     expect(wrapper.text()).toContain("宁可错过，不要做错；尊重常识");
   });

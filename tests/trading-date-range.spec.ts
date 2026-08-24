@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getDefaultTradingDateRange } from "../shared/trading-date-range";
+
+import { getDefaultTradingDateRange } from "#/shared/trading-date-range";
 
 describe("default trading date range", () => {
   it("uses the current Shanghai date and starts seven days earlier", () => {

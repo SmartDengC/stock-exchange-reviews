@@ -5,23 +5,13 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [vue()],
   resolve: {
-    alias: [
-      {
-        find: "~~",
-        replacement: fileURLToPath(new URL(".", import.meta.url)),
-      },
-      {
-        find: "#imports",
-        replacement: fileURLToPath(new URL("./tests/mocks/nuxt-imports.ts", import.meta.url)),
-      },
-      {
-        find: "~",
-        replacement: fileURLToPath(new URL("./app", import.meta.url)),
-      },
-    ],
+    alias: {
+      "#": fileURLToPath(new URL("./apps/web-antd/src", import.meta.url)),
+    },
   },
   test: {
     environment: "happy-dom",
     include: ["tests/**/*.spec.ts"],
+    setupFiles: ["./tests/setup.ts"],
   },
 });

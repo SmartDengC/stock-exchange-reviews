@@ -22,18 +22,18 @@ Turn work into verifiable outcomes, state a brief plan for multi-step tasks, and
 ## 快速启动
 
 ```bash
-pnpm exec dotenv --no-expand -e .env -e .env.local -- pnpm run dev
+pnpm run dev
 pnpm run build
 pnpm test
 ```
 
 ## 架构要点
 
-- Nuxt 仅承载页面和 SSR，不包含业务 Nitro API。
+- 前端是 Vben Admin v5.7.0 `web-antd` 的标准 Vite SPA，不包含业务 API。
 - 认证、复盘、交易、附件和 Excel 导出全部由 Trading Cloud FastAPI 提供。
-- 所有请求使用统一 `$api` 客户端，浏览器携带凭证，SSR 转发 Cookie。
+- 所有请求使用 `apps/web-antd/src/api` 的 Vben Request 客户端并携带浏览器凭证。
 - 本地固定使用 `http://localhost:3000` 和 `http://localhost:8000`，不要混用 `127.0.0.1`。
-- 前端环境变量为 `NUXT_PUBLIC_TRADING_API_BASE`。
+- 前端环境变量为 `VITE_GLOB_API_URL`。
 
 ### 登录验证
 
@@ -62,16 +62,17 @@ R 倍数 = 净盈亏 / plannedRiskAmount
 
 ## 修改前必读
 
-1. 业务请求只能经 `$api`，不要恢复 `/server/api` fallback。
-2. 附件与下载地址必须通过 `useApiUrl` 转换为绝对 Trading Cloud URL。
+1. 业务请求只能经 `src/api` 的 `requestClient`，不要增加本地 API fallback。
+2. 附件与下载地址必须通过 `apiUrl` 转换为绝对 Trading Cloud URL。
 3. Markdown 展示继续通过 `sanitize-html` 清理。
 4. 后端 schema、迁移和数据导入变更应在 `trading-cloud` 仓库完成。
 
 ## 文件组织
 
 ```text
-app/                 # Nuxt 页面、组件、composables 与 API 插件
-shared/              # 前端共享类型和交易计算器
+apps/web-antd/       # Vben web-antd SPA
+packages/            # 必需的 Vben 共享包
+internal/            # Vben 构建与配置包
 tests/               # Vitest 单元测试
 reviews/             # 历史 Markdown 资料
 ```

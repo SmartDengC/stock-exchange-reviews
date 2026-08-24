@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm install --registry=https://registry.npmjs.org/",
-  "buildCommand": "npm run build"
+  "framework": "vite",
+  "installCommand": "corepack enable && corepack pnpm install --frozen-lockfile",
+  "buildCommand": "corepack pnpm run build",
+  "outputDirectory": "apps/web-antd/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

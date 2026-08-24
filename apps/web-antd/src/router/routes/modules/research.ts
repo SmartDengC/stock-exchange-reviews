@@ -1,0 +1,54 @@
+import type { RouteRecordRaw } from 'vue-router';
+
+const routes: RouteRecordRaw[] = [
+  {
+    children: [
+      {
+        component: () => import('#/views/research/overview.vue'),
+        meta: { icon: 'lucide:layout-dashboard', title: '复盘总览' },
+        name: 'ResearchOverview',
+        path: '/',
+      },
+      {
+        component: () => import('#/views/research/rules.vue'),
+        meta: { icon: 'lucide:book-open-check', title: '交易规则' },
+        name: 'ResearchRules',
+        path: '/research/rules',
+      },
+      {
+        component: () => import('#/views/research/weekly.vue'),
+        meta: { icon: 'lucide:calendar-range', title: '周复盘' },
+        name: 'WeeklyReviews',
+        path: '/research/weekly',
+      },
+      {
+        component: () => import('#/views/research/daily.vue'),
+        meta: { icon: 'lucide:notebook-tabs', title: '日复盘' },
+        name: 'DailyReviews',
+        path: '/research/daily',
+      },
+      {
+        component: () => import('#/views/research/edit.vue'),
+        meta: { hideInMenu: true, title: '编辑复盘' },
+        name: 'ResearchEdit',
+        path: '/research/edit/:params(.*)*',
+      },
+      {
+        component: () => import('#/views/research/report.vue'),
+        meta: { hideInMenu: true, title: '复盘详情' },
+        name: 'ResearchReport',
+        path: '/report/:kind/:slug',
+      },
+    ],
+    meta: {
+      icon: 'lucide:chart-no-axes-combined',
+      order: 1,
+      title: '周度研究',
+    },
+    name: 'Research',
+    path: '/research-root',
+    redirect: '/',
+  },
+];
+
+export default routes;

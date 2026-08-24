@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeMarkdownHtml } from "~/lib/markdown-sanitize";
+
+import { sanitizeMarkdownHtml } from "#/lib/markdown-sanitize";
 
 describe("Markdown HTML sanitizing", () => {
   it("removes scripts, event handlers, and unsafe link schemes", () => {

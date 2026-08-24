@@ -22,7 +22,7 @@ web
 
 ## Operating Context
 
-研究资料与私有交易复盘都通过独立的 Trading Cloud FastAPI 读写。Nuxt 保留 SSR 和交互界面，浏览器直接访问 API；交易截图存储在私有 MinIO，业务数据与服务端会话存储在本地 PostgreSQL。
+研究资料与私有交易复盘都通过独立的 Trading Cloud FastAPI 读写。Vben Admin `web-antd` SPA 承载交互界面，浏览器直接访问 API；交易截图存储在私有 MinIO，业务数据与服务端会话存储在本地 PostgreSQL。
 
 `/trading` 模块包含交易总览、交易台账、每日复盘、统计洞察、字典设置、默认汇率和 Excel 导出。
 
@@ -50,8 +50,8 @@ web
 - `README.md` 记录产品功能、路由、部署和数据来源。
 - `AGENTS.md` 记录架构约束、构建流程、数据库并发、交易计算和常见陷阱。
 - `reviews/` 包含历史日报、周报和交易规则 Markdown。
-- `shared/trading-calculator.ts` 体现前端预览计算口径，最终结果由 Trading Cloud 计算。
-- `app/plugins/api.ts`、`app/composables/use-user-session.ts` 和各业务页面体现直连 API 与会话工作流。
+- `apps/web-antd/src/shared/trading-calculator.ts` 体现前端预览计算口径，最终结果由 Trading Cloud 计算。
+- `apps/web-antd/src/api`、`apps/web-antd/src/store/auth.ts` 和各业务页面体现直连 API 与会话工作流。
 - Trading Cloud 仓库中的 SQLAlchemy、Alembic、PostgreSQL DDL 和 MinIO 实现是后端数据模型的来源。
 - 当前没有可记录的外部客户、公开案例、收益证明或第三方背书；未来设计与文案不得虚构这些内容。
 
