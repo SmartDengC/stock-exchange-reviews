@@ -85,10 +85,27 @@ pnpm run check
 
 ## Vercel 部署
 
-仓库根目录的 `vercel.json` 会构建 `apps/web-antd`、发布其 `dist`，并为深层 URL 提供 SPA fallback。Vercel 项目需设置：
+仓库根目录的 `vercel.json` 会构建 `apps/web-antd`、发布其 `dist`，并按以下顺序处理请求：
+
+1. 将 `https://se.vdcc.cn/api/**` 同源代理到 `https://hahadeng.cn/api/**`。
+2. 对 API 响应禁用 Vercel 缓存。
+3. 其余深层 URL 返回 SPA 的 `index.html`。
+
+生产构建使用：
 
 ```dotenv
-VITE_GLOB_API_URL=https://api.example.com
+VITE_GLOB_API_URL=
 ```
 
-生产域名保持不变时，Trading Cloud 的 `TRADING_FRONTEND_ORIGIN` 与 Cookie 域无需因本次框架迁移调整。切换前应保留最后一个 Nuxt 部署作为回滚点。
+如果 Vercel Project Settings 中已经存在同名变量，应删除该变量或将 Production 值设为空字符串，否则会覆盖仓库内的 `.env.production`。
+
+Trading Cloud 服务器使用：
+
+```dotenv
+TRADING_FRONTEND_ORIGIN=https://se.vdcc.cn
+TRADING_PUBLIC_BASE_URL=https://se.vdcc.cn
+TRADING_SESSION_SECURE=true
+TRADING_SESSION_COOKIE_DOMAIN=
+```
+
+修改后需重启 FastAPI。Cookie 继续保持 HttpOnly、Secure、SameSite=Lax 和 host-only。阿里云只公开 Caddy 的 80/443，FastAPI 的 8000 不映射到宿主机。双云部署步骤见 `trading-cloud/deploy/README.md`。切换前应保留上一个 Vercel 部署作为回滚点。
