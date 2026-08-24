@@ -4,7 +4,10 @@ import { errorMessage } from "~/lib/trading";
 
 useSeoMeta({ title: "设置与导出 · 私有交易复盘", robots: "noindex, nofollow" });
 
+const { $api } = useNuxtApp();
+const apiUrl = useApiUrl();
 const { data, pending, error, refresh } = useFetch<TradingOptionsResponse>("/api/trading/options", {
+  $fetch: $api,
   lazy: true,
   server: false,
 });
@@ -34,7 +37,7 @@ async function saveRate() {
   activeAction.value = "rate";
   status.value = "";
   try {
-    await $fetch("/api/trading/options", { method: "PATCH", body: { defaultUsdtCnyRate: rate.value } });
+    await $api("/api/trading/options", { method: "PATCH", body: { defaultUsdtCnyRate: rate.value } });
     status.value = "默认汇率已保存；历史交易不会重算。";
     statusTone.value = "success";
     await refresh();
@@ -56,7 +59,7 @@ async function addOption() {
   activeAction.value = "add";
   status.value = "";
   try {
-    await $fetch("/api/trading/options", {
+    await $api("/api/trading/options", {
       method: "PATCH",
       body: { options: [{ kind: newOption.kind, label: newOption.label.trim(), active: true, sortOrder: grouped.value[newOption.kind].length }] },
     });
@@ -77,7 +80,7 @@ async function toggleOption(item: TradingOptionsResponse["options"][number]) {
   activeAction.value = item.id;
   status.value = "";
   try {
-    await $fetch("/api/trading/options", {
+    await $api("/api/trading/options", {
       method: "PATCH",
       body: { options: [{ kind: item.kind, label: item.label, active: !item.active, sortOrder: item.sortOrder }] },
     });
@@ -96,7 +99,7 @@ const exportUrl = computed(() => {
   const query = new URLSearchParams();
   if (from.value) query.set("from", from.value);
   if (to.value) query.set("to", to.value);
-  return `/api/trading/export.xlsx${query.size ? `?${query}` : ""}`;
+  return apiUrl(`/api/trading/export.xlsx${query.size ? `?${query}` : ""}`);
 });
 </script>
 

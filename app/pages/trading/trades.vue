@@ -8,6 +8,7 @@ useSeoMeta({ title: "交易记录 · 私有交易复盘", robots: "noindex, nofo
 
 const route = useRoute();
 const router = useRouter();
+const { $api } = useNuxtApp();
 const defaultDateRange = getDefaultTradingDateRange();
 
 // 搜索输入防抖
@@ -47,6 +48,7 @@ const currentPage = ref(typeof route.query.page === "string" ? Math.max(1, Numbe
 const pageSize = ref(50);
 
 const { data, pending, error, refresh } = useFetch<TradeListResponse>("/api/trading/trades", {
+  $fetch: $api,
   lazy: true,
   server: false,
   query: computed(() => {
@@ -80,7 +82,7 @@ watch(() => route.query.tradeId, async (tradeId) => {
     return;
   }
   if (selectedTrade.value?.id === tradeId) return;
-  selectedTrade.value = await $fetch<TradeView>(`/api/trading/trades/${tradeId}`).catch(() => null);
+  selectedTrade.value = await $api<TradeView>(`/api/trading/trades/${tradeId}`).catch(() => null);
 }, { immediate: true });
 
 function selectTrade(trade: TradeView | null) {

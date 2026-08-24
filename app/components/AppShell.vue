@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { Modal } from "@arco-design/web-vue";
 import { useAccessibleDialog } from "~/composables/use-accessible-dialog";
-import { useSessionTimeout } from "~/composables/use-session-timeout";
 import { currentTradingDate } from "~/lib/trading";
 
 type ModuleKey = "research" | "trading";
@@ -13,7 +11,7 @@ const props = defineProps<{
 }>();
 
 const route = useRoute();
-const { user, fetch: refreshSession } = useUserSession();
+const { user, clear: clearSession } = useUserSession();
 const { theme, setTheme } = useTheme();
 const navOpen = ref(false);
 const navCollapsed = ref(false);
@@ -44,29 +42,9 @@ const activeModule = computed<ModuleKey>(() => route.path.startsWith("/trading")
 const userName = computed(() => user.value?.username ?? "已登录用户");
 const userInitial = computed(() => userName.value.trim().slice(0, 1).toUpperCase() || "M");
 
-const sessionTimeout = useSessionTimeout(() => {
-  Modal.warning({
-    title: "Session 即将过期",
-    content: "您已登录 55 分钟，Session 将在 5 分钟后过期。点击确定将跳转至登录页。",
-    okText: "确定",
-    cancelText: "稍后提醒",
-    onOk: async () => {
-      await $fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-      await refreshSession();
-      localStorage.removeItem("session_login_time");
-      await navigateTo("/login?timeout=true");
-    },
-  });
-});
-
 onMounted(() => {
   today.value = currentTradingDate();
   navCollapsed.value = localStorage.getItem("market-diary:nav-collapsed") === "true";
-  sessionTimeout.init();
-});
-
-onUnmounted(() => {
-  sessionTimeout.stop();
 });
 
 watch(navCollapsed, (value) => {
@@ -137,8 +115,7 @@ function tradingActive(link: { to: string; base?: string }) {
 }
 
 async function logout() {
-  await $fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
-  await refreshSession();
+  await clearSession().catch(() => undefined);
   await navigateTo("/login");
 }
 </script>

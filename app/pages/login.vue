@@ -6,6 +6,7 @@ const loading = ref(false);
 const error = ref("");
 const errorElement = ref<HTMLElement | null>(null);
 const isTimeout = computed(() => route.query.timeout === "true");
+const { $api } = useNuxtApp();
 
 const { fetch: refreshSession, loggedIn } = useUserSession();
 
@@ -27,14 +28,11 @@ async function login() {
   loading.value = true;
   error.value = "";
   try {
-    await $fetch("/api/auth/login", {
+    await $api("/api/auth/login", {
       method: "POST",
       body: { username: username.value, password: password.value },
     });
     if (import.meta.client) {
-      localStorage.setItem("session_login_time", String(Date.now()));
-      // 用完整页面跳转（非 SPA 导航），确保 session cookie 在所有浏览器中被正确携带。
-      // navigateTo() 是 SPA 导航，Safari ITP 可能阻止 fetch 请求携带 cookie。
       window.location.href = String(route.query.returnTo || "/research/rules");
     }
   } catch (cause) {

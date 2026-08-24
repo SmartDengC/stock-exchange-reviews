@@ -5,6 +5,7 @@ const password = ref("");
 const loading = ref(false);
 const error = ref("");
 const errorElement = ref<HTMLElement | null>(null);
+const { $api } = useNuxtApp();
 const { fetch: refreshSession, loggedIn } = useUserSession();
 
 useSeoMeta({
@@ -24,7 +25,7 @@ async function login() {
   loading.value = true;
   error.value = "";
   try {
-    await $fetch("/api/auth/login", {
+    await $api("/api/auth/login", {
       method: "POST",
       body: { username: username.value, password: password.value },
     });

@@ -25,6 +25,7 @@ export function toReviewRecord(r: ResearchReview) {
 }
 
 export function useResearchReviewList(filters: MaybeRefOrGetter<ResearchReviewFilters> = {}) {
+  const { $api } = useNuxtApp();
   const query = computed(() => {
     const resolved = toValue(filters);
     const params: Record<string, string> = {};
@@ -36,6 +37,7 @@ export function useResearchReviewList(filters: MaybeRefOrGetter<ResearchReviewFi
   });
 
   return useFetch<ResearchReview[]>("/api/reviews", {
+    $fetch: $api,
     query,
     watch: [query],
     lazy: true,
@@ -44,7 +46,9 @@ export function useResearchReviewList(filters: MaybeRefOrGetter<ResearchReviewFi
 }
 
 export function useResearchReview(kind: string, slug: string) {
+  const { $api } = useNuxtApp();
   return useFetch<ResearchReview>(`/api/reviews/${kind}/${slug}`, {
+    $fetch: $api,
     lazy: true,
     server: false,
   });
@@ -55,14 +59,16 @@ export async function saveResearchReview(
   slug: string,
   data: { title: string; dateLabel: string; content: string; version?: number },
 ) {
-  return await $fetch<ResearchReview>(`/api/reviews/${kind}/${slug}`, {
+  const { $api } = useNuxtApp();
+  return await $api<ResearchReview>(`/api/reviews/${kind}/${slug}`, {
     method: "PUT",
     body: data,
   });
 }
 
 export async function deleteResearchReview(kind: string, slug: string) {
-  return await $fetch<{ ok: boolean }>(`/api/reviews/${kind}/${slug}`, {
+  const { $api } = useNuxtApp();
+  return await $api<{ ok: boolean }>(`/api/reviews/${kind}/${slug}`, {
     method: "DELETE",
   });
 }

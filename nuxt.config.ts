@@ -3,7 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2026-07-22",
   devtools: { enabled: false },
-  modules: ["@nuxt/eslint", "nuxt-auth-utils"],
+  modules: ["@nuxt/eslint"],
   css: [
     "@arco-design/web-vue/dist/arco.css",
     "~/assets/css/main.css",
@@ -26,17 +26,11 @@ export default defineNuxtConfig({
     "/login": { prerender: false },
     "/report/**": { prerender: false },
     "/trading/**": { ssr: true, prerender: false, headers: { "cache-control": "private, no-store" } },
-    "/api/trading/**": { headers: { "cache-control": "private, no-store" } },
   },
   runtimeConfig: {
-    username: "",
-    password: "",
-    githubToken: "",
-    githubOwner: "SmartDengC",
-    githubRepo: "stock-exchange-reviews",
-    githubBranch: "main",
-    databaseUrl: "",
-    blobReadWriteToken: "",
+    public: {
+      tradingApiBase: "http://localhost:8000",
+    },
   },
   app: {
     head: {

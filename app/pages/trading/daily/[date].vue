@@ -4,12 +4,14 @@ import type { DailyReviewInput, DailyReviewView } from "~~/shared/types/trading"
 import { errorMessage, formatMoney, formatPercent, formatTradingDate } from "~/lib/trading";
 
 const route = useRoute();
+const { $api } = useNuxtApp();
 const date = computed(() => String(route.params.date));
 useSeoMeta({ title: () => `${date.value} 日复盘 · 私有交易复盘`, robots: "noindex, nofollow" });
 
 const saving = ref(false);
 const status = ref("");
 const { data, pending, error, refresh } = useFetch<DailyReviewView>(() => `/api/trading/daily-reviews/${date.value}`, {
+  $fetch: $api,
   lazy: true,
   server: false,
 });
@@ -57,7 +59,7 @@ async function save() {
   saving.value = true;
   status.value = "";
   try {
-    await $fetch(`/api/trading/daily-reviews/${date.value}`, { method: "PUT", body: form });
+    await $api(`/api/trading/daily-reviews/${date.value}`, { method: "PUT", body: form });
     status.value = "日复盘已保存";
     await refresh();
   } catch (cause) {

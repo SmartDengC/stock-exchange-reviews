@@ -1,106 +1,77 @@
+<INSTRUCTIONS>
+1. Think Before Coding
+Don't assume. Don't hide confusion. Surface tradeoffs.
+
+- State assumptions explicitly when uncertain.
+- Present materially different interpretations instead of choosing silently.
+- Push back when a simpler approach is sufficient.
+- Stop and ask when ambiguity would materially change the result.
+
+2. Simplicity First
+Use the minimum code that solves the requested problem. Do not add speculative features, single-use abstractions, or impossible-case handling.
+
+3. Surgical Changes
+Touch only what the task requires. Preserve existing style and unrelated work. Remove only imports, variables, functions, and files made obsolete by the current change.
+
+4. Goal-Driven Execution
+Turn work into verifiable outcomes, state a brief plan for multi-step tasks, and loop until the relevant tests pass.
+</INSTRUCTIONS>
+
 # 市场日记 · 研究终端
 
 ## 快速启动
 
 ```bash
-# 本地开发
 pnpm exec dotenv --no-expand -e .env -e .env.local -- pnpm run dev
-
-# 构建（自动同步 reviews/ 目录）
 pnpm run build
-
-# 测试
 pnpm test
 ```
 
-## 关键命令
-
-| 命令 | 说明 |
-|------|------|
-| `pnpm run db:migrate` | 执行 Neon Postgres 迁移 |
-| `pnpm trading:import` | Excel 导入 dry-run |
-| `pnpm trading:import -- --apply` | Excel 导入并写入数据库 |
-
 ## 架构要点
 
+- Nuxt 仅承载页面和 SSR，不包含业务 Nitro API。
+- 认证、复盘、交易、附件和 Excel 导出全部由 Trading Cloud FastAPI 提供。
+- 所有请求使用统一 `$api` 客户端，浏览器携带凭证，SSR 转发 Cookie。
+- 本地固定使用 `http://localhost:3000` 和 `http://localhost:8000`，不要混用 `127.0.0.1`。
+- 前端环境变量为 `NUXT_PUBLIC_TRADING_API_BASE`。
+
 ### 登录验证
-- 全站需要登录后才能访问
-- 账号密码配置在 `.env` 文件中（明文）
-- 会话永久有效，直到用户主动退出或清除 Cookie
 
-### 双模块设计
-- **复盘报告**：`reviews/` Markdown 文件 → 构建时预渲染 → 静态展示
-- **交易复盘**：Neon Postgres + Vercel Private Blob → 登录后 SSR 访问
+- 全站需要登录后访问。
+- 登录状态来自 Trading Cloud 的 PostgreSQL 服务端会话。
+- Cookie 为 HttpOnly；前端通过 `/api/auth/session` 刷新状态。
+- 会话有效期以后端配置为准，前端不维护独立超时计时器。
 
-### 构建流程
-1. `prebuild` 钩子执行 `scripts/sync-reviews.mjs`，生成 `app/lib/generated-reviews.ts`
-2. Nuxt Nitro 预渲染 `/` 和 `/report/**` 路由
-3. `/trading/**` 路由为 SSR
+### 乐观锁与业务规则
 
-### 环境变量优先级
-```
-进程环境变量 > .env > .env.local
-```
-使用 `dotenv-cli --no-expand` 防止密码中的 `$` 被展开。
+- `trades` 和 `daily_reviews` 更新携带 `version`，冲突返回 409。
+- 交易日期使用 `Asia/Shanghai`。
+- CNY 结算时 `fxToCny` 为 `"1"`。
+- 每笔交易最多 10 张 JPEG/PNG/WebP；单张最多 15 MB，使用 multipart 上传。
 
-## 数据库与并发
+### 盈亏计算
 
-### 乐观锁机制
-- 每条 `trades` / `daily_reviews` 记录有 `version` 字段
-- 更新时校验 `version`，失败返回 409 冲突
-- 软删除使用 `deletedAt`，查询时默认 `IS NULL`
+前端预览位于 `shared/trading-calculator.ts`，最终结果由 Trading Cloud 重新计算：
 
-### 导入去重
-- Excel 导入使用 `source_file_hash` (SHA-256) + `source_row` 唯一索引
-- `import_batches` 表追踪批次状态，防止重复导入
-
-### 附件限制
-- 每笔交易最多 10 张截图（`trade_attachments`）
-- 使用 `pathname` 唯一索引防止重复上传
-
-## 业务逻辑
-
-### 盈亏计算（`shared/trading-calculator.ts`）
-```typescript
-// 使用 decimal.js，精度 40 位
+```text
 毛盈亏 = (exitPrice - entryPrice) × direction × positionSize
 净盈亏 = 毛盈亏 - fees
 人民币盈亏 = 净盈亏 × fxToCny
 R 倍数 = 净盈亏 / plannedRiskAmount
 ```
 
-## 测试约定
-
-```bash
-# 单元测试（vitest + happy-dom）
-pnpm run test:unit
-```
-
 ## 修改前必读
 
-1. **交易计算器**：任何涉及 `grossPnl`/`netPnl`/`rMultiple` 的修改需同步 `shared/trading-calculator.ts` 和 `scripts/import-trading-workbook.mjs`
-2. **Schema 变更**：修改 `db/schema.ts` 后执行 `pnpm run db:generate` 生成迁移
-3. **Markdown 安全**：复盘内容通过 `sanitize-html` 清理
-4. **GitHub Token**：需 fine-grained token，仅授权当前仓库，Contents 权限为 Read only
+1. 业务请求只能经 `$api`，不要恢复 `/server/api` fallback。
+2. 附件与下载地址必须通过 `useApiUrl` 转换为绝对 Trading Cloud URL。
+3. Markdown 展示继续通过 `sanitize-html` 清理。
+4. 后端 schema、迁移和数据导入变更应在 `trading-cloud` 仓库完成。
 
 ## 文件组织
 
-```
-app/                 # Nuxt 页面、组件、composables
-app/lib/             # 业务逻辑（reviews.ts, trading.ts, markdown-sanitize.ts）
-db/                  # Drizzle schema
-drizzle/             # 数据库迁移
-server/api/          # API 端点
-server/utils/        # 服务端工具（trading-repository, review-storage）
-shared/              # 共享类型和工具（types/, trading-calculator）
+```text
+app/                 # Nuxt 页面、组件、composables 与 API 插件
+shared/              # 前端共享类型和交易计算器
 tests/               # Vitest 单元测试
-scripts/             # 构建脚本（sync-reviews, import-trading-workbook）
-reviews/             # 原始 Markdown 复盘文件
+reviews/             # 历史 Markdown 资料
 ```
-
-## 常见陷阱
-
-- **环境变量**：Vercel 部署需配置 `NUXT_*` 前缀变量
-- **时区**：交易日期使用 `Asia/Shanghai`
-- **汇率**：CNY 结算时 `fxToCny` 强制为 `"1"`
-- **版本冲突**：前端编辑时需携带 `version` 字段，409 错误应提示用户重新加载

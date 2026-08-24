@@ -1,1 +1,0 @@
-ALTER TABLE "trades" ADD COLUMN "error_notes" text;

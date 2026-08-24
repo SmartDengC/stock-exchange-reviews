@@ -2,12 +2,13 @@
 import { parseTables } from "~/lib/reviews";
 
 const route = useRoute();
+const { $api } = useNuxtApp();
 const kind = Array.isArray(route.params.kind) ? route.params.kind[0] : route.params.kind;
 const slug = Array.isArray(route.params.slug) ? route.params.slug[0] : route.params.slug;
 
 const { data: apiReview, error: fetchError, pending } = useFetch<ResearchReview>(
   `/api/reviews/${kind}/${slug}`,
-  { lazy: true, server: false },
+  { $fetch: $api, lazy: true, server: false },
 );
 
 const record = computed(() => {

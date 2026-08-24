@@ -29,6 +29,8 @@ const closeButton = ref<HTMLElement | null>(null);
 const lightboxCloseButton = ref<HTMLElement | null>(null);
 const visible = computed(() => Boolean(props.trade));
 const lightboxVisible = computed(() => visible.value && imageIndex.value !== null);
+const { $api } = useNuxtApp();
+const apiUrl = useApiUrl();
 
 function closeDetail() {
   emit("close");
@@ -52,7 +54,7 @@ async function removeTrade() {
   deleting.value = true;
   error.value = "";
   try {
-    await $fetch(`/api/trading/trades/${trade.id}`, {
+    await $api(`/api/trading/trades/${trade.id}`, {
       method: "DELETE",
       query: { version: trade.version },
     });
@@ -69,7 +71,7 @@ async function setCover(id: string) {
   const trade = props.trade;
   if (!trade || attachmentAction.value) return;
   await updateAttachment("cover", trade.id, async () => {
-    await $fetch(`/api/trading/trades/${trade.id}/attachments/${id}`, {
+    await $api(`/api/trading/trades/${trade.id}/attachments/${id}`, {
       method: "PATCH",
       body: { isCover: true },
     });
@@ -80,7 +82,7 @@ async function removeAttachment(id: string) {
   const trade = props.trade;
   if (!trade || attachmentAction.value || !window.confirm("确定删除这张截图吗？")) return;
   await updateAttachment("remove", trade.id, async () => {
-    await $fetch(`/api/trading/trades/${trade.id}/attachments/${id}`, { method: "DELETE" });
+    await $api(`/api/trading/trades/${trade.id}/attachments/${id}`, { method: "DELETE" });
   });
 }
 
@@ -94,11 +96,11 @@ async function moveAttachment(index: number, direction: -1 | 1) {
   if (!current || !target) return;
   await updateAttachment("move", trade.id, async () => {
     await Promise.all([
-      $fetch(`/api/trading/trades/${trade.id}/attachments/${current.id}`, {
+      $api(`/api/trading/trades/${trade.id}/attachments/${current.id}`, {
         method: "PATCH",
         body: { sortOrder: target.sortOrder },
       }),
-      $fetch(`/api/trading/trades/${trade.id}/attachments/${target.id}`, {
+      $api(`/api/trading/trades/${trade.id}/attachments/${target.id}`, {
         method: "PATCH",
         body: { sortOrder: current.sortOrder },
       }),
@@ -120,7 +122,7 @@ async function updateAttachment(action: string, tradeId: string, update: () => P
 }
 
 async function refreshTrade(id: string) {
-  const latest = await $fetch<TradeView>(`/api/trading/trades/${id}`);
+  const latest = await $api<TradeView>(`/api/trading/trades/${id}`);
   emit("updated", latest);
   emit("refresh");
 }
@@ -206,7 +208,7 @@ async function refreshTrade(id: string) {
               </div>
               <div v-if="trade.attachments.length" class="trade-gallery">
                 <figure v-for="(image, index) in trade.attachments" :key="image.id">
-                  <button type="button" @click="imageIndex = index"><img :src="image.fileUrl" :alt="image.fileName" :width="image.width ?? 1600" :height="image.height ?? 900" loading="lazy"></button>
+                  <button type="button" @click="imageIndex = index"><img :src="apiUrl(image.fileUrl)" :alt="image.fileName" :width="image.width ?? 1600" :height="image.height ?? 900" loading="lazy"></button>
                   <figcaption>
                     <span>{{ image.isCover ? "封面" : image.fileName }}</span>
                     <div>
@@ -244,7 +246,7 @@ async function refreshTrade(id: string) {
       <button type="button" class="trade-lightbox-dismiss" aria-hidden="true" tabindex="-1" @click="closeLightbox" />
       <button ref="lightboxCloseButton" type="button" class="trade-lightbox-close" aria-label="关闭原图" @click="closeLightbox">×</button>
       <img
-        :src="trade.attachments[imageIndex]?.fileUrl"
+        :src="apiUrl(trade.attachments[imageIndex]?.fileUrl)"
         :alt="trade.attachments[imageIndex]?.fileName"
         :width="trade.attachments[imageIndex]?.width ?? 1600"
         :height="trade.attachments[imageIndex]?.height ?? 900"

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { upload } from "@vercel/blob/client";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import { calculateTrade } from "~~/shared/trading-calculator";
@@ -40,6 +39,7 @@ const closeButton = ref<HTMLElement | null>(null);
 const errorElement = ref<HTMLElement | null>(null);
 const initialSnapshot = ref("");
 const visible = computed(() => props.open);
+const { $api } = useNuxtApp();
 
 function snapshot() {
   return JSON.stringify({ form, entryLocal: entryLocal.value, exitLocal: exitLocal.value, files: queuedFiles.value.map((file) => file.name) });
@@ -157,7 +157,7 @@ watch(() => props.open, async (open) => {
   if (!options.value) {
     loadingOptions.value = true;
     try {
-      options.value = await $fetch<TradingOptionsResponse>("/api/trading/options");
+      options.value = await $api<TradingOptionsResponse>("/api/trading/options");
     } catch (e) {
       console.error("加载交易选项失败:", e);
     } finally {
@@ -190,35 +190,14 @@ function chooseFiles(event: Event) {
   input.value = "";
 }
 
-async function imageSize(file: File) {
-  try {
-    const bitmap = await createImageBitmap(file);
-    const size = { width: bitmap.width, height: bitmap.height };
-    bitmap.close();
-    return size;
-  } catch {
-    return { width: null, height: null };
-  }
-}
-
 async function uploadQueued(trade: TradeView) {
   while (queuedFiles.value.length) {
     const file = queuedFiles.value[0]!;
-    const size = await imageSize(file);
-    const blob = await upload(`trades/${trade.id}/${file.name}`, file, {
-      access: "private",
-      handleUploadUrl: `/api/trading/trades/${trade.id}/attachments`,
-      clientPayload: JSON.stringify({
-        tradeId: trade.id,
-      }),
-    });
-    await $fetch(`/api/trading/trades/${trade.id}/attachments/complete`, {
+    const body = new FormData();
+    body.append("file", file, file.name);
+    await $api(`/api/trading/trades/${trade.id}/attachments`, {
       method: "POST",
-      body: {
-        pathname: blob.pathname,
-        fileName: file.name,
-        ...size,
-      },
+      body,
     });
     queuedFiles.value.shift();
   }
@@ -237,8 +216,8 @@ async function save() {
       exitReason: form.status === "closed" ? form.exitReason : null,
     };
     const trade = props.trade
-      ? await $fetch<TradeView>(`/api/trading/trades/${props.trade.id}`, { method: "PATCH", body: payload })
-      : await $fetch<TradeView>("/api/trading/trades", { method: "POST", body: payload });
+      ? await $api<TradeView>(`/api/trading/trades/${props.trade.id}`, { method: "PATCH", body: payload })
+      : await $api<TradeView>("/api/trading/trades", { method: "POST", body: payload });
     form.version = trade.version;
     try {
       await uploadQueued(trade);

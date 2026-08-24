@@ -22,15 +22,15 @@ web
 
 ## Operating Context
 
-公开研究资料来自 `reviews/` 下的日报和周报 Markdown 文件，构建时同步为 Nuxt 页面数据。管理员可在网页中预览和编辑复盘 Markdown，并通过 GitHub Contents API 写回原始文件。
+研究资料与私有交易复盘都通过独立的 Trading Cloud FastAPI 读写。Nuxt 保留 SSR 和交互界面，浏览器直接访问 API；交易截图存储在私有 MinIO，业务数据与服务端会话存储在本地 PostgreSQL。
 
-私有交易复盘通过 `/trading` 模块完成，包含交易总览、交易台账、每日复盘、统计洞察、字典设置、默认汇率和 Excel 导出。交易截图存储在 Vercel Private Blob，交易和日复盘数据存储在 Neon Postgres。
+`/trading` 模块包含交易总览、交易台账、每日复盘、统计洞察、字典设置、默认汇率和 Excel 导出。
 
 日常使用应支持高频、低摩擦录入，同时保留足够的上下文用于未来复盘。
 
 ## Capabilities and Constraints
 
-- 公开复盘支持日报与周报归档、Markdown 渲染、表格、引用、代码块和在线编辑。
+- 研究复盘支持日报与周报归档、Markdown 渲染、表格、引用、代码块和在线编辑。
 - 私有交易支持逐笔记录、未平仓记录、服务端盈亏/R 倍计算、逐笔汇率、执行评分、情绪、错误标签、截图附件和软删除。
 - 日复盘支持每日市场计划、交易总结、最佳交易、最大失误、纪律检查和明日改进项。
 - 统计洞察按市场、策略、执行等级、情绪和错误模式汇总交易表现。
@@ -49,10 +49,10 @@ web
 
 - `README.md` 记录产品功能、路由、部署和数据来源。
 - `AGENTS.md` 记录架构约束、构建流程、数据库并发、交易计算和常见陷阱。
-- `reviews/` 包含真实日报、周报和交易规则 Markdown。
-- `reviews_trading/` 包含迁移来源 Excel 工作簿。
-- `shared/trading-calculator.ts` 和 `scripts/import-trading-workbook.mjs` 共同体现交易计算口径。
-- `db/schema.ts`、`server/api/trading/**` 和 `server/utils/trading-repository.ts` 体现私有交易数据模型与工作流。
+- `reviews/` 包含历史日报、周报和交易规则 Markdown。
+- `shared/trading-calculator.ts` 体现前端预览计算口径，最终结果由 Trading Cloud 计算。
+- `app/plugins/api.ts`、`app/composables/use-user-session.ts` 和各业务页面体现直连 API 与会话工作流。
+- Trading Cloud 仓库中的 SQLAlchemy、Alembic、PostgreSQL DDL 和 MinIO 实现是后端数据模型的来源。
 - 当前没有可记录的外部客户、公开案例、收益证明或第三方背书；未来设计与文案不得虚构这些内容。
 
 ## Product Principles
@@ -61,7 +61,7 @@ web
 2. 每日录入必须足够快，不能让复盘系统本身成为交易后的负担。
 3. 研究资料、交易行为和统计结果应互相连接，形成闭环。
 4. 计算口径和原始证据必须稳定，避免因界面改动破坏长期比较。
-5. 公开研究与私有交易数据必须保持清晰边界。
+5. 研究与交易接口都必须经过认证，Cookie、附件和业务数据不能由前端持有密钥后直接访问存储层。
 
 ## Accessibility & Inclusion
 

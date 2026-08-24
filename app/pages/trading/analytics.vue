@@ -6,9 +6,11 @@ useSeoMeta({ title: "统计洞察 · 私有交易复盘", robots: "noindex, nofo
 
 const route = useRoute();
 const router = useRouter();
+const { $api } = useNuxtApp();
 const from = ref(typeof route.query.from === "string" ? route.query.from : "");
 const to = ref(typeof route.query.to === "string" ? route.query.to : "");
 const { data, pending, error } = useFetch<TradingDashboard>("/api/trading/dashboard", {
+  $fetch: $api,
   lazy: true,
   server: false,
   query: computed(() => ({ from: from.value || undefined, to: to.value || undefined })),

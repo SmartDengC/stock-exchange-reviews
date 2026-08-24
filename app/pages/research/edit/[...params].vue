@@ -4,6 +4,7 @@ import { generateReviewSlug } from "~/lib/reviews";
 
 const route = useRoute();
 const router = useRouter();
+const { $api } = useNuxtApp();
 const segments = (Array.isArray(route.params.params) ? route.params.params : [route.params.params]).filter(Boolean);
 const kind = (segments[0] === "weekly" ? "weekly" : "daily");
 const slug = segments[1];
@@ -34,7 +35,7 @@ async function focusError() {
 const loading = ref(isEdit);
 const { data: existing } = useFetch<ResearchReview>(
   () => (isEdit && slug ? `/api/reviews/${kind}/${slug}` : ""),
-  { lazy: true, server: false },
+  { $fetch: $api, lazy: true, server: false },
 );
 
 watch(existing, (value) => {

@@ -5,6 +5,8 @@ import { formatMoney, formatNumber, formatPercent, formatTradingDate, marketLabe
 
 useSeoMeta({ title: "交易总览 · 私有交易复盘", robots: "noindex, nofollow" });
 
+const { $api } = useNuxtApp();
+
 const defaultDateRange = getDefaultTradingDateRange();
 const route = useRoute();
 const router = useRouter();
@@ -16,6 +18,7 @@ const editingTrade = ref<TradeView | null>(null);
 const cloneSource = ref<TradeView | null>(null);
 
 const { data, pending, error, refresh } = useFetch<TradingDashboard>("/api/trading/dashboard", {
+  $fetch: $api,
   lazy: true,
   server: false,
   query: computed(() => ({ from: from.value || undefined, to: to.value || undefined })),
@@ -31,7 +34,7 @@ watch(() => route.query.tradeId, async (tradeId) => {
     return;
   }
   if (selectedTrade.value?.id === tradeId) return;
-  selectedTrade.value = await $fetch<TradeView>(`/api/trading/trades/${tradeId}`).catch(() => null);
+  selectedTrade.value = await $api<TradeView>(`/api/trading/trades/${tradeId}`).catch(() => null);
 }, { immediate: true });
 
 function selectTrade(trade: TradeView | null) {
