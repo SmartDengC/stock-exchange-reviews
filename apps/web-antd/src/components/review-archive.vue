@@ -4,6 +4,8 @@ import type { ResearchReview } from '#/types/research';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import dayjs from 'dayjs';
+
 import {
   Button,
   Card,
@@ -19,7 +21,7 @@ import {
 } from 'ant-design-vue';
 
 import { listResearchReviews } from '#/api';
-import { errorMessage } from '#/lib/trading';
+import { currentTradingDate, errorMessage } from '#/lib/trading';
 
 const props = defineProps<{ kind: 'daily' | 'weekly' }>();
 const route = useRoute();
@@ -29,11 +31,25 @@ const loading = ref(true);
 const error = ref('');
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '');
 const dateFrom = ref(
-  typeof route.query.dateFrom === 'string' ? route.query.dateFrom : '',
+  typeof route.query.dateFrom === 'string'
+    ? route.query.dateFrom
+    : defaultDateFrom(),
 );
 const dateTo = ref(
-  typeof route.query.dateTo === 'string' ? route.query.dateTo : '',
+  typeof route.query.dateTo === 'string'
+    ? route.query.dateTo
+    : defaultDateTo(),
 );
+
+function defaultDateFrom() {
+  if (props.kind !== 'daily') return '';
+  return dayjs(currentTradingDate()).subtract(7, 'day').format('YYYY-MM-DD');
+}
+
+function defaultDateTo() {
+  if (props.kind !== 'daily') return '';
+  return currentTradingDate();
+}
 
 const kindLabel = computed(() => (props.kind === 'weekly' ? '周' : '日'));
 
@@ -63,8 +79,8 @@ async function refresh() {
 
 function clearFilters() {
   query.value = '';
-  dateFrom.value = '';
-  dateTo.value = '';
+  dateFrom.value = defaultDateFrom();
+  dateTo.value = defaultDateTo();
   return refresh();
 }
 
