@@ -15,34 +15,44 @@
 
 ## 本地启动
 
-先配置 Trading Cloud：
+前端通过 Vite dev proxy 转发 `/api` 请求，默认连本地后端，也可一行命令切换到远程服务器后端。两种模式都无需改代码，只改启动命令。
 
-```dotenv
-TRADING_FRONTEND_ORIGIN=http://localhost:3000
-TRADING_PUBLIC_BASE_URL=http://localhost:8000
-TRADING_SESSION_SECURE=false
-TRADING_SESSION_COOKIE_DOMAIN=
-```
+### 前置条件
 
-确认后端就绪：
+- Node.js 22.18.x
+- pnpm 11.16.x（通过 Corepack 使用）
+- 本地后端（Trading Cloud FastAPI）监听 `http://localhost:8000`
 
-```bash
-curl http://localhost:8000/health/ready
-```
-
-前端开发环境已在 `apps/web-antd/.env.development` 使用：
-
-```dotenv
-VITE_GLOB_API_URL=http://localhost:8000
-```
-
-安装并启动：
+### 方式一：连本地后端（默认）
 
 ```bash
-corepack enable
-pnpm install --frozen-lockfile
 pnpm run dev
 ```
+
+- Vite proxy 把 `/api/**` 转发到 `http://localhost:8000`
+- 适用于本地后端正在运行的开发场景
+
+### 方式二：连远程服务器后端
+
+```bash
+VITE_DEV_API_PROXY_TARGET=https://se.xxxx.cn pnpm run dev
+```
+
+- Vite proxy 把 `/api/**` 转发到 `https://se.xxxx.cn`
+- 适用于本地无后端、直接连远程服务器的场景
+- Cookie 经 `cookieDomainRewrite: 'localhost'` 改写后设到 `localhost`，浏览器自动携带
+
+### 原理
+
+| 配置项                      | 文件                             | 作用                              |
+| --------------------------- | -------------------------------- | --------------------------------- |
+| `VITE_GLOB_API_URL`         | `apps/web-antd/.env.development` | 留空，让请求走相对路径 `/api/...` |
+| `VITE_DEV_API_PROXY_TARGET` | `apps/web-antd/vite.config.ts`   | 环境变量，控制 proxy target       |
+| `server.proxy['/api']`      | `apps/web-antd/vite.config.ts`   | Vite dev server 代理配置          |
+
+`.env.development` 里 `VITE_GLOB_API_URL=` 留空，axios 请求走相对路径 `/api/...`，被 Vite dev server 拦截转发到 `proxyTarget`。
+
+> ⚠️ 改动 `.env.development` 或 `vite.config.ts` 后必须重启 dev server（Ctrl-C 后重新 `pnpm run dev`），Vite 不会热重载这些文件。
 
 打开 `http://localhost:3000`。
 
@@ -87,7 +97,7 @@ pnpm run check
 
 仓库根目录的 `vercel.json` 会构建 `apps/web-antd`、发布其 `dist`，并按以下顺序处理请求：
 
-1. 将 `https://se.vdcc.cn/api/**` 同源代理到 `https://hahadeng.cn/api/**`。
+1. 将 `https://se.xxxx.cn/api/**` 同源代理到 `https://hahaxxxx.cn/api/**`。
 2. 对 API 响应禁用 Vercel 缓存。
 3. 其余深层 URL 返回 SPA 的 `index.html`。
 
@@ -102,8 +112,8 @@ VITE_GLOB_API_URL=
 Trading Cloud 服务器使用：
 
 ```dotenv
-TRADING_FRONTEND_ORIGIN=https://se.vdcc.cn
-TRADING_PUBLIC_BASE_URL=https://se.vdcc.cn
+TRADING_FRONTEND_ORIGIN=https://se.xxxx.cn
+TRADING_PUBLIC_BASE_URL=https://se.xxxx.cn
 TRADING_SESSION_SECURE=true
 TRADING_SESSION_COOKIE_DOMAIN=
 ```
