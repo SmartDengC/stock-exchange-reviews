@@ -131,6 +131,25 @@ export type TradingOption = {
   sortOrder: number;
 };
 
+export type TradingRule = {
+  active: boolean;
+  createdAt: string;
+  description: string;
+  id: string;
+  sortOrder: number;
+  title: string;
+  updatedAt: string;
+  version: number;
+};
+
+export type TradingRuleInput = {
+  active: boolean;
+  description: string;
+  sortOrder: number;
+  title: string;
+  version?: number;
+};
+
 export type TradingSettings = {
   defaultUsdtCnyRate: string;
 };

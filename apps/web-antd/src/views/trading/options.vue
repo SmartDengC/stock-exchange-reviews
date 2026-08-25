@@ -50,7 +50,7 @@ const statusTone = ref<'error' | 'success'>('success');
 
 // 筛选
 const query = ref('');
-const kindFilter = ref<TradingOptionKind | ''>('');
+const kindFilter = ref<TradingOptionKind | ''>('instrument_code');
 const statusFilter = ref<'' | 'active' | 'inactive'>('');
 
 const filteredOptions = computed(() => {

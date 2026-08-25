@@ -7,6 +7,8 @@ import type {
   TradeView,
   TradingDashboard,
   TradingOptionsResponse,
+  TradingRule,
+  TradingRuleInput,
 } from '#/shared/types/trading';
 
 import { apiUrl, requestClient } from './request';
@@ -117,19 +119,47 @@ function exportUrl(filters: TradeListFilters = {}) {
   );
 }
 
+function listTradingRules(signal?: AbortSignal) {
+  return requestClient.get<TradingRule[]>('/api/trading/rules', {
+    ...(signal ? { signal } : {}),
+  });
+}
+
+function createTradingRule(input: TradingRuleInput) {
+  return requestClient.post<TradingRule>('/api/trading/rules', input);
+}
+
+function updateTradingRule(id: string, input: TradingRuleInput) {
+  return requestClient.request<TradingRule>(
+    `/api/trading/rules/${id}`,
+    { data: input, method: 'PATCH' },
+  );
+}
+
+function deleteTradingRule(id: string, version: number) {
+  return requestClient.delete<{ ok: boolean }>(
+    `/api/trading/rules/${id}`,
+    { params: { version } },
+  );
+}
+
 export {
   createTrade,
+  createTradingRule,
   deleteAttachment,
   deleteTrade,
+  deleteTradingRule,
   exportUrl,
   getDailyReview,
   getTrade,
   getTradingDashboard,
   getTradingOptions,
   listTrades,
+  listTradingRules,
   saveDailyReview,
   updateAttachment,
   updateTrade,
   updateTradingOptions,
+  updateTradingRule,
   uploadTradeAttachments,
 };

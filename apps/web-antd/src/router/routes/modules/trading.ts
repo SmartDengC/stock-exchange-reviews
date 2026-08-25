@@ -6,6 +6,12 @@ const routes: RouteRecordRaw[] = [
   {
     children: [
       {
+        component: () => import('#/views/trading/rules.vue'),
+        meta: { icon: 'lucide:book-open-check', title: '交易规则' },
+        name: 'TradingRules',
+        path: '/trading/rules',
+      },
+      {
         component: () => import('#/views/trading/overview.vue'),
         meta: { icon: 'lucide:gauge', title: '交易总览' },
         name: 'TradingOverview',

@@ -10,12 +10,6 @@ const routes: RouteRecordRaw[] = [
         path: '/',
       },
       {
-        component: () => import('#/views/research/rules.vue'),
-        meta: { icon: 'lucide:book-open-check', title: '交易规则' },
-        name: 'ResearchRules',
-        path: '/research/rules',
-      },
-      {
         component: () => import('#/views/research/weekly.vue'),
         meta: { icon: 'lucide:calendar-range', title: '周复盘' },
         name: 'WeeklyReviews',
