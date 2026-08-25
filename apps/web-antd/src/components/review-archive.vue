@@ -97,12 +97,6 @@ onBeforeUnmount(() => refreshController?.abort());
     :title="`${kindLabel}复盘归档`"
     :subtitle="`${reviews.length} 篇${kindLabel}度研究，支持按日期和关键词筛选。`"
   >
-    <template #actions>
-      <Button type="primary" @click="router.push(`/research/edit/${kind}`)">
-        新建{{ kindLabel }}复盘
-      </Button>
-    </template>
-
     <Card class="terminal-panel filter-panel" :bordered="false">
       <div class="filters-grid">
         <Input.Search
@@ -124,6 +118,9 @@ onBeforeUnmount(() => refreshController?.abort());
           @change="refresh"
         />
         <Button v-if="query || dateFrom || dateTo" @click="clearFilters">清除筛选</Button>
+        <Button type="primary" @click="router.push(`/research/edit/${kind}`)">
+          新建{{ kindLabel }}复盘
+        </Button>
       </div>
     </Card>
 
@@ -150,7 +147,11 @@ onBeforeUnmount(() => refreshController?.abort());
           </tbody>
         </table>
       </div>
-      <Empty v-else :description="`暂无${kindLabel}复盘数据`" />
+      <Empty v-else :description="`暂无${kindLabel}复盘数据`">
+        <Button type="primary" @click="router.push(`/research/edit/${kind}`)">
+          新建{{ kindLabel }}复盘
+        </Button>
+      </Empty>
     </Card>
   </PageFrame>
 </template>
