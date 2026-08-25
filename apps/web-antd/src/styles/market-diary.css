@@ -523,6 +523,12 @@ button:active {
 .cell-subtitle { color: var(--md-muted); display: block; font-size: 0.7rem; }
 .ledger-panel .ant-pagination { margin-top: 1rem; }
 
+.archive-table-wrap { overflow-x: auto; }
+.archive-table { border-collapse: collapse; min-width: 36rem; width: 100%; }
+.archive-table :is(th, td) { border-bottom: 1px solid var(--md-border); padding: 0.75rem; text-align: left; vertical-align: middle; }
+.archive-table thead th { color: var(--md-muted); font-size: 0.7rem; font-weight: 650; letter-spacing: 0.06em; }
+.archive-table tbody tr { cursor: pointer; }
+
 .detail-title { display: grid; }
 .detail-title > span { color: var(--md-muted); font-size: 0.7rem; }
 .detail-title > strong { color: var(--md-text); font-size: 1.05rem; }

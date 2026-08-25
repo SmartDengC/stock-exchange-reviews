@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import type { TradingDashboard } from '#/shared/types/trading';
 
-import { onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Alert, DatePicker, Empty, Skeleton } from 'ant-design-vue';
 
-import { getTradingDashboard } from '#/api';
+import { getTradingDashboard, isCanceledRequest } from '#/api';
 import PageFrame from '#/components/page-frame.vue';
 import { errorMessage, formatMoney, formatPercent } from '#/lib/trading';
 
@@ -17,16 +17,31 @@ const to = ref(typeof route.query.to === 'string' ? route.query.to : '');
 const data = ref<null | TradingDashboard>(null);
 const loading = ref(true);
 const failure = ref('');
+let requestId = 0;
+let loadController: AbortController | undefined;
 
 async function load() {
+  const id = ++requestId;
+  loadController?.abort();
+  const controller = new AbortController();
+  loadController = controller;
   loading.value = true;
   failure.value = '';
   try {
-    data.value = await getTradingDashboard({ from: from.value || undefined, to: to.value || undefined });
+    const result = await getTradingDashboard(
+      { from: from.value || undefined, to: to.value || undefined },
+      controller.signal,
+    );
+    if (id === requestId) data.value = result;
   } catch (error) {
-    failure.value = errorMessage(error);
+    if (id === requestId && !isCanceledRequest(error)) {
+      failure.value = errorMessage(error);
+    }
   } finally {
-    loading.value = false;
+    if (id === requestId) {
+      loadController = undefined;
+      loading.value = false;
+    }
   }
 }
 watch([from, to], async () => {
@@ -37,6 +52,7 @@ function maxCount(items: Array<{ count: number }>) {
   return Math.max(1, ...items.map((item) => item.count));
 }
 onMounted(load);
+onBeforeUnmount(() => loadController?.abort());
 </script>
 
 <template>

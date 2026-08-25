@@ -1,10 +1,8 @@
 <script lang="ts" setup>
 import type { ResearchReview } from '#/types/research';
 
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-
-import dayjs from 'dayjs';
 
 import {
   Button,
@@ -12,16 +10,14 @@ import {
   DatePicker,
   Empty,
   Input,
-  List,
-  ListItem,
-  ListItemMeta,
   Result,
   Skeleton,
   Tag,
 } from 'ant-design-vue';
+import dayjs from 'dayjs';
 
-import { listResearchReviews } from '#/api';
-import { currentTradingDate, errorMessage } from '#/lib/trading';
+import { isCanceledRequest, listResearchReviews } from '#/api';
+import { currentTradingDate, errorMessage, formatTradingDateTime } from '#/lib/trading';
 
 const props = defineProps<{ kind: 'daily' | 'weekly' }>();
 const route = useRoute();
@@ -40,6 +36,7 @@ const dateTo = ref(
     ? route.query.dateTo
     : defaultDateTo(),
 );
+let refreshController: AbortController | undefined;
 
 function defaultDateFrom() {
   if (props.kind !== 'daily') return '';
@@ -54,6 +51,9 @@ function defaultDateTo() {
 const kindLabel = computed(() => (props.kind === 'weekly' ? '周' : '日'));
 
 async function refresh() {
+  refreshController?.abort();
+  const controller = new AbortController();
+  refreshController = controller;
   loading.value = true;
   error.value = '';
   try {
@@ -62,7 +62,8 @@ async function refresh() {
       dateTo: dateTo.value || undefined,
       kind: props.kind,
       q: query.value || undefined,
-    });
+    }, controller.signal);
+    if (controller.signal.aborted) return;
     await router.replace({
       query: {
         dateFrom: dateFrom.value || undefined,
@@ -71,9 +72,12 @@ async function refresh() {
       },
     });
   } catch (error_) {
-    error.value = errorMessage(error_);
+    if (!isCanceledRequest(error_)) error.value = errorMessage(error_);
   } finally {
-    loading.value = false;
+    if (refreshController === controller) {
+      refreshController = undefined;
+      loading.value = false;
+    }
   }
 }
 
@@ -85,6 +89,7 @@ function clearFilters() {
 }
 
 onMounted(refresh);
+onBeforeUnmount(() => refreshController?.abort());
 </script>
 
 <template>
@@ -127,19 +132,24 @@ onMounted(refresh);
       <Result v-else-if="error" status="error" title="读取复盘失败" :sub-title="error">
         <template #extra><Button @click="refresh">重试</Button></template>
       </Result>
-      <List v-else-if="reviews.length > 0" :data-source="reviews" item-layout="horizontal">
-        <template #renderItem="{ item }: { item: ResearchReview }">
-          <ListItem class="archive-item" @click="router.push(`/report/${item.kind}/${item.slug}`)">
-            <ListItemMeta :description="item.dateLabel">
-              <template #title>
-                <span>{{ item.title }}</span>
-              </template>
-              <template #avatar><Tag>{{ item.slug }}</Tag></template>
-            </ListItemMeta>
-            <Button type="link">阅读</Button>
-          </ListItem>
-        </template>
-      </List>
+      <div v-else-if="reviews.length > 0" class="archive-table-wrap">
+        <table class="archive-table">
+          <thead>
+            <tr>
+              <th>标识</th><th>标题</th><th>日期</th><th>更新时间</th><th class="sr-only">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in reviews" :key="item.id" @click="router.push(`/report/${item.kind}/${item.slug}`)">
+              <td><Tag>{{ item.slug }}</Tag></td>
+              <td>{{ item.title }}</td>
+              <td>{{ item.dateLabel }}</td>
+              <td>{{ formatTradingDateTime(item.updatedAt) }}</td>
+              <td><Button type="link" @click.stop="router.push(`/report/${item.kind}/${item.slug}`)">阅读</Button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <Empty v-else :description="`暂无${kindLabel}复盘数据`" />
     </Card>
   </PageFrame>

@@ -27,6 +27,24 @@ describe('trading API adapter', () => {
     });
   });
 
+  it('passes cancellation signals to list and dashboard queries', async () => {
+    requestClient.get.mockResolvedValue({});
+    const { getTradingDashboard, listTrades } = await import('#/api/trading');
+    const controller = new AbortController();
+
+    await listTrades({ status: 'open' }, controller.signal);
+    await getTradingDashboard({ from: '2026-08-01' }, controller.signal);
+
+    expect(requestClient.get).toHaveBeenNthCalledWith(1, '/api/trading/trades', {
+      params: { q: undefined, status: 'open' },
+      signal: controller.signal,
+    });
+    expect(requestClient.get).toHaveBeenNthCalledWith(2, '/api/trading/dashboard', {
+      params: { from: '2026-08-01' },
+      signal: controller.signal,
+    });
+  });
+
   it('uploads each screenshot as an individual multipart request', async () => {
     requestClient.post.mockResolvedValue({});
     const { uploadTradeAttachments } = await import('#/api/trading');

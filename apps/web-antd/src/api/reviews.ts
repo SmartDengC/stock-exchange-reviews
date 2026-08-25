@@ -2,9 +2,13 @@ import type { ResearchReview, ResearchReviewFilters } from '#/types/research';
 
 import { requestClient } from './request';
 
-function listResearchReviews(filters: ResearchReviewFilters = {}) {
+function listResearchReviews(
+  filters: ResearchReviewFilters = {},
+  signal?: AbortSignal,
+) {
   return requestClient.get<ResearchReview[]>('/api/reviews', {
     params: filters,
+    ...(signal ? { signal } : {}),
   });
 }
 

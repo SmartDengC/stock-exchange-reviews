@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import type { TradeView, TradingDashboard } from '#/shared/types/trading';
 
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons-vue';
 import { Alert, Button, DatePicker, Empty, Skeleton, Tag } from 'ant-design-vue';
 
-import { getTrade, getTradingDashboard } from '#/api';
+import { getTrade, getTradingDashboard, isCanceledRequest } from '#/api';
 import PageFrame from '#/components/page-frame.vue';
 import TradeDetailDrawer from '#/components/trade-detail-drawer.vue';
 import TradeFormModal from '#/components/trade-form-modal.vue';
@@ -36,17 +36,29 @@ const editingTrade = ref<null | TradeView>(null);
 const cloneSource = ref<null | TradeView>(null);
 
 let requestId = 0;
+let loadController: AbortController | undefined;
 async function load() {
   const id = ++requestId;
+  loadController?.abort();
+  const controller = new AbortController();
+  loadController = controller;
   loading.value = true;
   failure.value = '';
   try {
-    const result = await getTradingDashboard({ from: from.value || undefined, to: to.value || undefined });
+    const result = await getTradingDashboard(
+      { from: from.value || undefined, to: to.value || undefined },
+      controller.signal,
+    );
     if (id === requestId) data.value = result;
   } catch (error) {
-    if (id === requestId) failure.value = errorMessage(error);
+    if (id === requestId && !isCanceledRequest(error)) {
+      failure.value = errorMessage(error);
+    }
   } finally {
-    if (id === requestId) loading.value = false;
+    if (id === requestId) {
+      loadController = undefined;
+      loading.value = false;
+    }
   }
 }
 
@@ -116,6 +128,7 @@ const cumulativeZeroY = computed(() => {
 });
 
 onMounted(load);
+onBeforeUnmount(() => loadController?.abort());
 </script>
 
 <template>

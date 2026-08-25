@@ -11,16 +11,21 @@ import type {
 
 import { apiUrl, requestClient } from './request';
 
-function getTradingDashboard(params: { from?: string; to?: string } = {}) {
+function getTradingDashboard(
+  params: { from?: string; to?: string } = {},
+  signal?: AbortSignal,
+) {
   return requestClient.get<TradingDashboard>('/api/trading/dashboard', {
     params,
+    ...(signal ? { signal } : {}),
   });
 }
 
-function listTrades(filters: TradeListFilters = {}) {
+function listTrades(filters: TradeListFilters = {}, signal?: AbortSignal) {
   const { query, ...params } = filters;
   return requestClient.get<TradeListResponse>('/api/trading/trades', {
     params: { ...params, q: query },
+    ...(signal ? { signal } : {}),
   });
 }
 
