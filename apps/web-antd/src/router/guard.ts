@@ -22,12 +22,12 @@ function createRouterGuard(router: Router) {
     const authStore = useAuthStore();
 
     if (to.path === LOGIN_PATH) {
-      const loggedIn = await authStore.ensureSession(true);
+      const loggedIn = await authStore.ensureSession();
       if (loggedIn) return String(to.query.returnTo || '/');
       return true;
     }
 
-    const loggedIn = await authStore.ensureSession(true);
+    const loggedIn = await authStore.ensureSession();
     if (!loggedIn) {
       return {
         path: LOGIN_PATH,
