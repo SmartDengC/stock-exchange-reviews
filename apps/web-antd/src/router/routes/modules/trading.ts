@@ -36,6 +36,12 @@ const routes: RouteRecordRaw[] = [
         path: '/trading/analytics',
       },
       {
+        component: () => import('#/views/trading/options.vue'),
+        meta: { icon: 'lucide:book-text', title: '录入字段' },
+        name: 'TradingOptions',
+        path: '/trading/options',
+      },
+      {
         component: () => import('#/views/trading/settings.vue'),
         meta: { icon: 'lucide:settings-2', title: '设置与导出' },
         name: 'TradingSettings',

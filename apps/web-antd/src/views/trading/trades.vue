@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import type { TradeListFilters, TradeListResponse, TradeView } from '#/shared/types/trading';
 
-import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons-vue';
+import { DownloadOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons-vue';
 import {
   Alert,
   Button,
@@ -17,7 +17,7 @@ import {
   Tag,
 } from 'ant-design-vue';
 
-import { getTrade, isCanceledRequest, listTrades } from '#/api';
+import { exportUrl, getTrade, isCanceledRequest, listTrades } from '#/api';
 import PageFrame from '#/components/page-frame.vue';
 import TradeDetailDrawer from '#/components/trade-detail-drawer.vue';
 import TradeFormModal from '#/components/trade-form-modal.vue';
@@ -64,6 +64,15 @@ function requestFilters(): TradeListFilters {
     pageSize: pageSize.value,
   };
 }
+
+const downloadUrl = computed(() => exportUrl({
+  from: filters.from || undefined,
+  to: filters.to || undefined,
+  grade: filters.grade || undefined,
+  outcome: filters.outcome === 'win' || filters.outcome === 'loss' ? filters.outcome : undefined,
+  query: filters.query || undefined,
+  status: filters.status || undefined,
+}));
 
 async function load() {
   const id = ++requestId;
@@ -183,6 +192,7 @@ onBeforeUnmount(() => {
       <Select v-model:value="filters.grade" :options="[{ label: '全部评分', value: '' }, ...['A', 'B', 'C'].map((value) => ({ label: value, value }))]" />
       <Select v-model:value="filters.outcome" :options="[{ label: '全部结果', value: '' }, { label: '盈利', value: 'win' }, { label: '亏损', value: 'loss' }]" />
       <Button @click="clearFilters">重置</Button>
+      <Button type="primary" :href="downloadUrl"><DownloadOutlined />导出 Excel</Button>
     </section>
 
     <Skeleton v-if="loading" active :paragraph="{ rows: 8 }" />
