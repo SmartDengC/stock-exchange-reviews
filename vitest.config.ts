@@ -11,6 +11,9 @@ export default defineConfig({
       "@vben/request": fileURLToPath(
         new URL("packages/effects/request/src/index.ts", import.meta.url),
       ),
+      "vue-router": fileURLToPath(
+        new URL("apps/web-antd/node_modules/vue-router", import.meta.url),
+      ),
     },
   },
   test: {

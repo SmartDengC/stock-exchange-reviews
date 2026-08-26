@@ -168,7 +168,20 @@ function resetForm() {
     };
   }
   if (props.trade) {
-    const { attachments: _attachments, ...tradeInput } = props.trade;
+    const {
+      attachments: _attachments,
+      createdAt: _createdAt,
+      deletedAt: _deletedAt,
+      grossPnl: _grossPnl,
+      holdMinutes: _holdMinutes,
+      id: _id,
+      isWinning: _isWinning,
+      netPnl: _netPnl,
+      pnlCny: _pnlCny,
+      rMultiple: _rMultiple,
+      updatedAt: _updatedAt,
+      ...tradeInput
+    } = props.trade;
     source = {
       ...tradeInput,
       errorTags: [...(props.trade.errorTags ?? [])],

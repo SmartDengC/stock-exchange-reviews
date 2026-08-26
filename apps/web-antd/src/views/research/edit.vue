@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import {
@@ -42,9 +42,7 @@ const version = ref<number>();
 const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
-const mode = ref<'edit' | 'preview'>(
-  route.query.preview === '1' ? 'preview' : 'edit',
-);
+const mode = ref<'edit' | 'preview'>('edit');
 const initialSnapshot = ref('');
 
 function snapshot() {
@@ -136,12 +134,6 @@ function warnBeforeUnload(event: BeforeUnloadEvent) {
   event.preventDefault();
   event.returnValue = '';
 }
-
-watch(mode, (value) => {
-  router.replace({
-    query: { ...route.query, preview: value === 'preview' ? '1' : undefined },
-  });
-});
 onMounted(() => {
   window.addEventListener('beforeunload', warnBeforeUnload);
   load();

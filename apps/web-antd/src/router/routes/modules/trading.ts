@@ -13,13 +13,16 @@ const routes: RouteRecordRaw[] = [
       },
       {
         component: () => import('#/views/trading/overview.vue'),
-        meta: { icon: 'lucide:gauge', title: '交易总览' },
+        // fullPathKey: false 让布局以 path 作为组件 key，
+        // 页面把 tradeId/日期筛选同步进 query 时不会重挂载组件、丢失弹窗状态。
+        meta: { fullPathKey: false, icon: 'lucide:gauge', title: '交易总览' },
         name: 'TradingOverview',
         path: '/trading',
       },
       {
         component: () => import('#/views/trading/trades.vue'),
-        meta: { icon: 'lucide:list-ordered', title: '交易记录' },
+        // 同上：tradeId / 筛选 / 分页的 query 变化不应触发整页重建。
+        meta: { fullPathKey: false, icon: 'lucide:list-ordered', title: '交易记录' },
         name: 'Trades',
         path: '/trading/trades',
       },
