@@ -56,6 +56,20 @@ const dirty = computed(
   () => Boolean(initialSnapshot.value) && snapshot() !== initialSnapshot.value,
 );
 
+// 新建日复盘要求日期标签是严格的 YYYY-MM-DD 真实日期（如 2026-08-26），
+// 编号生成与归档列表排序都依赖该格式。
+function isValidIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year = 0, month = 0, day = 0] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  // 回读校验可拦截 2026-02-31 这类格式正确但不存在的日期。
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
 async function load() {
   if (!isEdit.value) {
     initialSnapshot.value = snapshot();
@@ -78,12 +92,19 @@ async function load() {
 
 async function save() {
   error.value = '';
+  // 新建日复盘：日期标签必须是 2026-08-26 这样的真实日期。
+  if (
+    kind.value === 'daily' &&
+    !isEdit.value &&
+    !isValidIsoDate(model.dateLabel.trim())
+  ) {
+    error.value = '日期标签必须为 YYYY-MM-DD 格式的真实日期，例如 2026-08-26。';
+    return;
+  }
   const targetSlug = generatedSlug.value;
   if (!targetSlug) {
     error.value =
-      kind.value === 'weekly'
-        ? '无法生成编号：请填写日期、周号或在标题中注明“某年第某周”。'
-        : '无法生成编号：请填写 2026年8月14日 或 2026-08-14 格式的日期。';
+      '无法生成编号：请填写日期、周号或在标题中注明“某年第某周”。';
     return;
   }
   if (!model.title.trim() || !model.content.trim()) {
@@ -166,7 +187,7 @@ onBeforeRouteLeave(
             <FormItem label="日期标签">
               <Input
                 v-model:value="model.dateLabel"
-                :placeholder="kind === 'weekly' ? '2026年8月10日-14日 或 2026-W33' : '2026年8月14日（周五）'"
+                :placeholder="kind === 'weekly' ? '2026年8月10日-14日 或 2026-W33' : '2026-08-26'"
               />
             </FormItem>
             <FormItem label="编号">
