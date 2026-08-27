@@ -492,6 +492,25 @@ button:active {
   width: 11.25rem;
 }
 
+.market-menu-search > div:last-child {
+  background: transparent;
+  border-radius: 0.45rem;
+  gap: 0;
+  height: 2rem;
+  justify-content: center;
+  margin-right: 0.25rem;
+  padding: 0;
+  width: 2rem;
+}
+
+.market-menu-search > div:last-child:hover {
+  background: var(--md-accent-soft);
+}
+
+.market-menu-search > div:last-child > span {
+  display: none;
+}
+
 .memory-stream {
   display: grid;
   gap: 0.8rem;

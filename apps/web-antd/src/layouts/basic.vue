@@ -2,13 +2,14 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { BasicLayout, UserDropdown } from '@vben/layouts';
-import { useUserStore } from '@vben/stores';
+import { BasicLayout, GlobalSearch, UserDropdown } from '@vben/layouts';
+import { useAccessStore, useUserStore } from '@vben/stores';
 import { openWindow } from '@vben/utils';
 
 import { useAuthStore } from '#/store';
 
 const router = useRouter();
+const accessStore = useAccessStore();
 const authStore = useAuthStore();
 const userStore = useUserStore();
 
@@ -36,6 +37,12 @@ function handleLogout() {
 
 <template>
   <BasicLayout @clear-preferences-and-logout="handleLogout">
+    <template #global-search>
+      <GlobalSearch
+        :menus="accessStore.accessMenus"
+        class="market-menu-search"
+      />
+    </template>
     <template #user-dropdown>
       <UserDropdown
         :avatar

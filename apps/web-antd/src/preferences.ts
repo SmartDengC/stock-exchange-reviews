@@ -50,7 +50,7 @@ export const overridesPreferences = defineOverridesPreferences({
   },
   widget: {
     fullscreen: true,
-    globalSearch: false,
+    globalSearch: true,
     languageToggle: false,
     lockScreen: false,
     notification: false,
