@@ -13,7 +13,7 @@ import { $t, setupI18n } from '#/locales';
 
 import { initComponentAdapter } from './adapter/component';
 import { initSetupVbenForm } from './adapter/form';
-import { postLogoutBeacon, setUnauthorizedHandler } from './api';
+import { setUnauthorizedHandler } from './api';
 import App from './app.vue';
 import { router } from './router';
 import { useAuthStore } from './store';
@@ -79,34 +79,6 @@ async function bootstrap(namespace: string) {
   });
 
   app.mount('#app');
-
-  // 页面关闭时自动登出
-  setupAutoLogout();
-}
-
-/**
- * 注册页面关闭时的自动登出逻辑。
- * 使用 navigator.sendBeacon（同步排队，浏览器保证发出）
- * 搭配 pagehide 事件，确保关闭标签页/窗口时登出请求可靠到达后端。
- */
-function setupAutoLogout() {
-  let pending = false;
-
-  function triggerLogout() {
-    if (pending) return;
-    const authStore = useAuthStore();
-    if (!authStore.loggedIn) return;
-    pending = true;
-    // sendBeacon 同步排队请求后立即返回，浏览器保证发出
-    postLogoutBeacon();
-    // 立即清除本地状态
-    authStore.clearSession();
-  }
-
-  // pagehide 在标签页/窗口关闭、刷新时触发
-  window.addEventListener('pagehide', () => {
-    triggerLogout();
-  });
 }
 
 export { bootstrap };
