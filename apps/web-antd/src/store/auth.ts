@@ -121,6 +121,7 @@ export const useAuthStore = defineStore('market-diary-auth', () => {
   return {
     $reset,
     authLogin,
+    clearSession,
     currentUser,
     ensureSession,
     expireSession,
