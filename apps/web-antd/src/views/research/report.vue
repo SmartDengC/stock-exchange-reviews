@@ -22,7 +22,7 @@ async function load() {
   error.value = '';
   try {
     review.value = await getResearchReview(
-      String(route.params.kind),
+      route.path.includes('/report/daily/') ? 'daily' : 'weekly',
       String(route.params.slug),
     );
   } catch (error_) {
@@ -35,6 +35,18 @@ async function load() {
 
 onMounted(load);
 watch(() => route.fullPath, load);
+
+function backToArchive() {
+  const kind = review.value?.kind || (route.path.includes('/report/daily/') ? 'daily' : 'weekly');
+  const previousPath = typeof window.history.state?.back === 'string'
+    ? window.history.state.back
+    : '';
+  if (previousPath.startsWith(`/research/${kind}`)) {
+    router.back();
+    return;
+  }
+  void router.push(`/research/${kind}`);
+}
 </script>
 
 <template>
@@ -44,7 +56,7 @@ watch(() => route.fullPath, load);
     :kicker="review ? `${review.kind === 'weekly' ? 'WEEKLY' : 'DAILY'} REVIEW / ${review.slug}` : 'MARKET DIARY'"
   >
     <template #actions>
-      <Button @click="router.push(`/research/${review?.kind || 'weekly'}`)">返回归档</Button>
+      <Button @click="backToArchive">返回归档</Button>
       <Button v-if="review" type="primary" @click="router.push(`/research/edit/${review.kind}/${review.slug}`)">编辑</Button>
     </template>
 

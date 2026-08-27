@@ -1,3 +1,9 @@
+<script lang="ts">
+import type { ResearchReview as CachedResearchReview } from '#/types/research';
+
+const archiveCache = new Map<string, CachedResearchReview[]>();
+</script>
+
 <script lang="ts" setup>
 import type { ResearchReview } from '#/types/research';
 
@@ -50,6 +56,15 @@ function defaultDateTo() {
 
 const kindLabel = computed(() => (props.kind === 'weekly' ? '周' : '日'));
 
+function cacheKey() {
+  return JSON.stringify({
+    dateFrom: dateFrom.value || '',
+    dateTo: dateTo.value || '',
+    kind: props.kind,
+    q: query.value || '',
+  });
+}
+
 async function refresh() {
   refreshController?.abort();
   const controller = new AbortController();
@@ -57,13 +72,15 @@ async function refresh() {
   loading.value = true;
   error.value = '';
   try {
-    reviews.value = await listResearchReviews({
+    const result = await listResearchReviews({
       dateFrom: dateFrom.value || undefined,
       dateTo: dateTo.value || undefined,
       kind: props.kind,
       q: query.value || undefined,
     }, controller.signal);
     if (controller.signal.aborted) return;
+    reviews.value = result;
+    archiveCache.set(cacheKey(), result);
     await router.replace({
       query: {
         dateFrom: dateFrom.value || undefined,
@@ -81,14 +98,15 @@ async function refresh() {
   }
 }
 
-function clearFilters() {
-  query.value = '';
-  dateFrom.value = defaultDateFrom();
-  dateTo.value = defaultDateTo();
-  return refresh();
-}
-
-onMounted(refresh);
+onMounted(() => {
+  const cachedReviews = archiveCache.get(cacheKey());
+  if (cachedReviews) {
+    reviews.value = cachedReviews;
+    loading.value = false;
+    return;
+  }
+  void refresh();
+});
 onBeforeUnmount(() => refreshController?.abort());
 </script>
 
@@ -103,21 +121,18 @@ onBeforeUnmount(() => refreshController?.abort());
           v-model:value="query"
           allow-clear
           placeholder="搜索标题或正文"
-          @search="refresh"
         />
         <DatePicker
           v-model:value="dateFrom"
           value-format="YYYY-MM-DD"
           placeholder="开始日期"
-          @change="refresh"
         />
         <DatePicker
           v-model:value="dateTo"
           value-format="YYYY-MM-DD"
           placeholder="结束日期"
-          @change="refresh"
         />
-        <Button v-if="query || dateFrom || dateTo" @click="clearFilters">清除筛选</Button>
+        <Button @click="refresh">查询</Button>
         <Button type="primary" @click="router.push(`/research/edit/${kind}`)">
           新建{{ kindLabel }}复盘
         </Button>

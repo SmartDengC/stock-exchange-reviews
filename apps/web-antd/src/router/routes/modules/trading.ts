@@ -40,7 +40,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         component: () => import('#/views/trading/analytics.vue'),
-        meta: { icon: 'lucide:chart-spline', title: '统计洞察' },
+        meta: { fullPathKey: false, icon: 'lucide:chart-spline', title: '统计洞察' },
         name: 'TradingAnalytics',
         path: '/trading/analytics',
       },

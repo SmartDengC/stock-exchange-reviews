@@ -52,7 +52,6 @@ const formOpen = ref(false);
 const selectedTrade = ref<null | TradeView>(null);
 const editingTrade = ref<null | TradeView>(null);
 const cloneSource = ref<null | TradeView>(null);
-let searchTimer: ReturnType<typeof setTimeout> | undefined;
 let requestId = 0;
 let loadController: AbortController | undefined;
 
@@ -96,19 +95,7 @@ async function load() {
   }
 }
 
-watch(searchInput, (value) => {
-  if (searchTimer) clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => (filters.query = value), 300);
-});
-watch(
-  filters,
-  () => {
-    page.value = 1;
-    void load();
-  },
-  { deep: true },
-);
-watch([() => ({ ...filters }), page], () => {
+function syncRouteQuery() {
   void router.replace({
     query: {
       from: filters.from || undefined,
@@ -121,8 +108,22 @@ watch([() => ({ ...filters }), page], () => {
       tradeId: selectedTrade.value?.id || undefined,
     },
   });
-}, { deep: true });
-watch(page, load);
+}
+
+async function applyFilters() {
+  filters.query = searchInput.value;
+  if (page.value !== 1) {
+    page.value = 1;
+    return;
+  }
+  syncRouteQuery();
+  await load();
+}
+
+watch(page, () => {
+  syncRouteQuery();
+  void load();
+});
 watch(
   () => route.query.tradeId,
   async (id) => {
@@ -161,12 +162,6 @@ function cloneTrade(trade: TradeView) {
   cloneSource.value = trade;
   formOpen.value = true;
 }
-function clearFilters() {
-  const range = getDefaultTradingDateRange();
-  Object.assign(filters, { ...range, grade: '', outcome: '', query: '', status: '' });
-  searchInput.value = '';
-  page.value = 1;
-}
 async function reload() {
   await load();
   if (selectedTrade.value) selectedTrade.value = await getTrade(selectedTrade.value.id);
@@ -174,7 +169,6 @@ async function reload() {
 
 onMounted(load);
 onBeforeUnmount(() => {
-  if (searchTimer) clearTimeout(searchTimer);
   loadController?.abort();
 });
 </script>
@@ -191,7 +185,7 @@ onBeforeUnmount(() => {
       <Select v-model:value="filters.status" :options="[{ label: '全部状态', value: '' }, { label: '已平仓', value: 'closed' }, { label: '未平仓', value: 'open' }]" />
       <Select v-model:value="filters.grade" :options="[{ label: '全部评分', value: '' }, ...['A', 'B', 'C'].map((value) => ({ label: value, value }))]" />
       <Select v-model:value="filters.outcome" :options="[{ label: '全部结果', value: '' }, { label: '盈利', value: 'win' }, { label: '亏损', value: 'loss' }]" />
-      <Button @click="clearFilters">重置</Button>
+      <Button @click="applyFilters">查询</Button>
       <Button type="primary" :href="downloadUrl"><DownloadOutlined />导出 Excel</Button>
     </section>
 

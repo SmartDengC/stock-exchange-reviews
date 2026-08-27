@@ -62,11 +62,6 @@ async function load() {
   }
 }
 
-watch([from, to], async () => {
-  await router.replace({ query: { ...route.query, from: from.value || undefined, to: to.value || undefined } });
-  await load();
-});
-
 watch(
   () => route.query.tradeId,
   async (id) => {
@@ -87,6 +82,11 @@ watch(
 function selectTrade(trade: null | TradeView) {
   selectedTrade.value = trade;
   void router.replace({ query: { ...route.query, tradeId: trade?.id || undefined } });
+}
+
+async function applyFilters() {
+  await router.replace({ query: { ...route.query, from: from.value || undefined, to: to.value || undefined } });
+  await load();
 }
 
 function newTrade() {
@@ -142,7 +142,7 @@ onBeforeUnmount(() => loadController?.abort());
     <section class="market-panel filter-strip">
       <label>开始日期<DatePicker v-model:value="from" value-format="YYYY-MM-DD" /></label>
       <label>结束日期<DatePicker v-model:value="to" value-format="YYYY-MM-DD" /></label>
-      <Button v-if="from || to" @click="from = ''; to = ''">查看全部</Button>
+      <Button @click="applyFilters">查询</Button>
       <span>统计仅纳入已平仓交易</span>
     </section>
 

@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import type { TradingDashboard } from '#/shared/types/trading';
 
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { Alert, DatePicker, Empty, Skeleton } from 'ant-design-vue';
+import { Alert, Button, DatePicker, Empty, Skeleton } from 'ant-design-vue';
 
 import { getTradingDashboard, isCanceledRequest } from '#/api';
 import PageFrame from '#/components/page-frame.vue';
@@ -44,10 +44,10 @@ async function load() {
     }
   }
 }
-watch([from, to], async () => {
+async function applyFilters() {
   await router.replace({ query: { from: from.value || undefined, to: to.value || undefined } });
   await load();
-});
+}
 function maxCount(items: Array<{ count: number }>) {
   return Math.max(1, ...items.map((item) => item.count));
 }
@@ -57,7 +57,7 @@ onBeforeUnmount(() => loadController?.abort());
 
 <template>
   <PageFrame kicker="ANALYTICS" title="统计洞察" subtitle="看清哪种策略赚钱，以及哪种行为反复制造亏损。">
-    <template #actions><div class="date-range"><DatePicker v-model:value="from" value-format="YYYY-MM-DD" /><span>至</span><DatePicker v-model:value="to" value-format="YYYY-MM-DD" /></div></template>
+    <template #actions><div class="date-range"><DatePicker v-model:value="from" value-format="YYYY-MM-DD" /><span>至</span><DatePicker v-model:value="to" value-format="YYYY-MM-DD" /><Button @click="applyFilters">查询</Button></div></template>
     <Skeleton v-if="loading" active :paragraph="{ rows: 9 }" />
     <Alert v-else-if="failure" type="error" show-icon :message="failure" />
     <section v-else-if="data" class="analytics-grid">

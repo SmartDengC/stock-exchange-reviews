@@ -31,12 +31,21 @@ const breadcrumbs = computed((): IBreadcrumb[] => {
 
   const resultBreadcrumb: IBreadcrumb[] = [];
 
-  for (const match of matched) {
+  for (const [index, match] of matched.entries()) {
     const { meta, path } = match;
-    const { hideChildrenInMenu, hideInBreadcrumb, icon, name, title } =
+    const { breadcrumbParents, hideChildrenInMenu, hideInBreadcrumb, icon, name, title } =
       meta || {};
     if (hideInBreadcrumb || hideChildrenInMenu || !path) {
       continue;
+    }
+
+    if (index === matched.length - 1 && Array.isArray(breadcrumbParents)) {
+      resultBreadcrumb.push(
+        ...breadcrumbParents.map((item) => ({
+          path: item.path,
+          title: item.title,
+        })),
+      );
     }
 
     resultBreadcrumb.push({

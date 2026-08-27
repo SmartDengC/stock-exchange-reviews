@@ -379,9 +379,24 @@ button:active {
 }
 
 .filters-grid {
-  display: grid;
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
+.filters-grid .ant-input-search {
+  flex: 0 1 18rem;
+  max-width: 18rem;
+}
+
+.filters-grid .ant-picker {
+  flex: 0 0 11.25rem;
+  width: 11.25rem;
+}
+
+.filters-grid .ant-btn {
+  flex: 0 0 auto;
 }
 
 .market-panel {
@@ -432,6 +447,31 @@ button:active {
   gap: 0.35rem;
   color: var(--md-muted);
   font-size: 0.75rem;
+}
+
+.filter-strip .ant-picker,
+.date-range .ant-picker {
+  width: 11.25rem;
+}
+
+.ledger-filters > .ant-input-affix-wrapper,
+.ledger-filters > .ant-input {
+  flex: 0 1 17.5rem;
+  max-width: 17.5rem;
+}
+
+.ledger-filters > .ant-picker {
+  flex: 0 0 11.25rem;
+  width: 11.25rem;
+}
+
+.ledger-filters > .ant-select {
+  flex: 0 0 10.5rem;
+  width: 10.5rem;
+}
+
+.ledger-filters > .ant-btn {
+  flex: 0 0 auto;
 }
 
 .filter-strip > span {
@@ -823,7 +863,22 @@ button:active {
   }
 
   .daily-trades { position: static; }
-  .ledger-filters > * { flex: 1 1 9rem; }
+  .filters-grid > *,
+  .ledger-filters > *,
+  .filter-strip label,
+  .date-range > .ant-picker {
+    flex: 1 1 9rem;
+    max-width: 100%;
+  }
+
+  .filters-grid .ant-picker,
+  .filter-strip .ant-picker,
+  .date-range .ant-picker,
+  .ledger-filters > .ant-picker,
+  .ledger-filters > .ant-select {
+    width: 100%;
+  }
+
   .filter-strip > span { flex-basis: 100%; margin-left: 0; }
 }
 
