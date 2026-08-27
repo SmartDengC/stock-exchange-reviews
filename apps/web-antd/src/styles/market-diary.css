@@ -487,6 +487,11 @@ button:active {
   max-width: 17.5rem;
 }
 
+.memo-date-picker {
+  flex: 0 0 11.25rem;
+  width: 11.25rem;
+}
+
 .memory-stream {
   display: grid;
   gap: 0.8rem;
