@@ -52,7 +52,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         component: () => import('#/views/trading/settings.vue'),
-        meta: { icon: 'lucide:settings-2', title: '设置与导出' },
+        meta: { hideInMenu: true, icon: 'lucide:settings-2', title: '设置与导出' },
         name: 'TradingSettings',
         path: '/trading/settings',
       },
