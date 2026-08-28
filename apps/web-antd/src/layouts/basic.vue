@@ -21,6 +21,11 @@ const menus = computed(() => [
     text: '设置与导出',
   },
   {
+    handler: () => router.push('/trading/options'),
+    icon: 'lucide:book-text',
+    text: '数据配置',
+  },
+  {
     handler: () =>
       openWindow('https://github.com/SmartDengC/stock-exchange-reviews', {
         target: '_blank',
@@ -38,10 +43,7 @@ function handleLogout() {
 <template>
   <BasicLayout @clear-preferences-and-logout="handleLogout">
     <template #global-search>
-      <GlobalSearch
-        :menus="accessStore.accessMenus"
-        class="market-menu-search"
-      />
+      <GlobalSearch :menus="accessStore.accessMenus" class="market-menu-search" />
     </template>
     <template #user-dropdown>
       <UserDropdown

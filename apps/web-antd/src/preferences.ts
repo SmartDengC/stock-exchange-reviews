@@ -39,7 +39,8 @@ export const overridesPreferences = defineOverridesPreferences({
     collapsedButton: true,
     collapseWidth: 64,
     draggable: false,
-    expandOnHover: false,
+    // Vben 中 true 表示固定侧栏；false 会在鼠标离开侧栏时自动折叠。
+    expandOnHover: true,
     width: 232,
   },
   tabbar: { enable: false },
