@@ -35,6 +35,7 @@ export const overridesPreferences = defineOverridesPreferences({
     styleType: 'rounded',
   },
   sidebar: {
+    collapsed: false,
     collapsedButton: true,
     collapseWidth: 64,
     draggable: false,

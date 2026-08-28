@@ -10,16 +10,16 @@ const routes: RouteRecordRaw[] = [
         path: '/',
       },
       {
-        component: () => import('#/views/research/weekly.vue'),
-        meta: { fullPathKey: false, icon: 'lucide:calendar-range', title: '周复盘' },
-        name: 'WeeklyReviews',
-        path: '/research/weekly',
-      },
-      {
         component: () => import('#/views/research/daily.vue'),
         meta: { fullPathKey: false, icon: 'lucide:notebook-tabs', title: '日复盘' },
         name: 'DailyReviews',
         path: '/research/daily',
+      },
+      {
+        component: () => import('#/views/research/weekly.vue'),
+        meta: { fullPathKey: false, icon: 'lucide:calendar-range', title: '周复盘' },
+        name: 'WeeklyReviews',
+        path: '/research/weekly',
       },
       {
         component: () => import('#/views/research/report.vue'),
