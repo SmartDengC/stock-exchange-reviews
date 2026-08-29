@@ -958,6 +958,13 @@ button:active {
 }
 .trade-form-grid.two-column { grid-template-columns: repeat(2, 1fr); }
 .trade-form .ant-picker { width: 100%; }
+.execution-list { display: grid; gap: 0.65rem; }
+.execution-row { align-items: center; display: grid; gap: 0.5rem; grid-template-columns: 7rem 13rem 8rem 8rem minmax(12rem, 1fr) auto; }
+.execution-row .ant-picker { width: 100%; }
+.execution-timeline { display: grid; gap: 0.55rem; }
+.execution-timeline-row { align-items: center; border-bottom: 1px solid var(--md-border); display: grid; gap: 0.75rem; grid-template-columns: 5rem 11rem 7rem 6rem minmax(0, 1fr); padding: 0.55rem 0; }
+.execution-timeline-row:last-child { border-bottom: 0; }
+.execution-timeline-row time, .execution-timeline-row > span { color: var(--md-muted); font-size: 0.78rem; }
 .form-section-title { align-items: center; color: var(--md-text); display: flex; font-size: 1rem; font-weight: 650; gap: 0.55rem; margin: 1rem 0; }
 .form-section-title span { color: var(--md-accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .selectable-tag { cursor: pointer; user-select: none; }
@@ -1027,6 +1034,8 @@ button:active {
   .option-groups {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .execution-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .dashboard-grid,
   .analytics-grid,

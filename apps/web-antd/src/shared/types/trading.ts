@@ -1,10 +1,22 @@
 export type TradeMarket = "a_share" | "crypto";
 export type TradeSide = "long" | "short";
-export type TradeStatus = "closed" | "open";
+export type TradeStatus = "closed" | "open" | "partially_closed";
 export type PositionBasis = "notional" | "quantity";
 export type SettlementCurrency = "CNY" | "USD" | "USDT";
 export type ExecutionGrade = "A" | "B" | "C";
 export type TradingOptionKind = "emotion" | "error_tag" | "instrument_code" | "strategy" | "symbol" | "timeframe";
+
+export type TradeExecutionAction = "entry" | "exit";
+
+export type TradeExecutionInput = {
+  action: TradeExecutionAction;
+  executedAt: string;
+  fee?: null | string;
+  note?: null | string;
+  price: string;
+  quantity: string;
+  reason: string;
+};
 
 export type TradeInput = {
   didWell?: null | string;
@@ -12,6 +24,7 @@ export type TradeInput = {
   entryAt: string;
   entryPrice: string;
   entryReason: string;
+  executions?: TradeExecutionInput[];
   errorNotes?: null | string;
   errorTags?: string[];
   executionGrade?: ExecutionGrade | null;
@@ -63,6 +76,14 @@ export type TradeView = TradeInput & {
   rMultiple: null | string;
   updatedAt: string;
   version: number;
+  executions: TradeExecutionView[];
+};
+
+export type TradeExecutionView = TradeExecutionInput & {
+  createdAt: string;
+  id: string;
+  tradeId: string;
+  updatedAt: string;
 };
 
 export type DailyReviewInput = {

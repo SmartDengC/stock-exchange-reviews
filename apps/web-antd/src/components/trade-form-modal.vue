@@ -1,11 +1,14 @@
 <script lang="ts" setup>
 import type {
   ExecutionGrade,
+  TradeExecutionInput,
   TradeInput,
   TradeView,
   TradingOption,
   TradingOptionsResponse,
 } from '#/shared/types/trading';
+
+type TradeExecutionDraft = TradeExecutionInput & { executedAtLocal: string };
 
 type TradeFormModel = Omit<
   TradeInput,
@@ -19,6 +22,7 @@ type TradeFormModel = Omit<
   | 'instrumentCode'
   | 'nextImprovement'
   | 'plannedRiskAmount'
+  | 'executions'
 > & {
   didWell: string;
   emotion: string;
@@ -109,6 +113,7 @@ const form = reactive<TradeFormModel>({
 const entryLocal = ref('');
 const exitLocal = ref('');
 const initialSnapshot = ref('');
+const executions = ref<TradeExecutionDraft[]>([]);
 
 function snapshot() {
   return JSON.stringify({
@@ -116,6 +121,7 @@ function snapshot() {
     exitLocal: exitLocal.value,
     files: queuedFiles.value.map((file) => `${file.name}:${file.size}`),
     form,
+    executions: executions.value,
   });
 }
 
@@ -188,6 +194,33 @@ function resetForm() {
       version: props.trade.version,
     };
   }
+  executions.value = props.trade?.executions?.map((item) => ({
+    ...item,
+    executedAtLocal: localDateTime(item.executedAt),
+  })) ?? [
+    {
+      action: 'entry',
+      executedAt: '',
+      executedAtLocal: localDateTime(source.entryAt),
+      fee: '0',
+      note: '',
+      price: source.entryPrice,
+      quantity: source.positionSize,
+      reason: source.entryReason,
+    },
+    ...(source.exitAt && source.exitPrice && source.exitReason
+      ? [{
+          action: 'exit' as const,
+          executedAt: '',
+          executedAtLocal: localDateTime(source.exitAt),
+          fee: '0',
+          note: '',
+          price: source.exitPrice,
+          quantity: source.positionSize,
+          reason: source.exitReason,
+        }]
+      : []),
+  ];
   Object.assign(form, {
     ...source,
     didWell: source.didWell ?? '',
@@ -256,6 +289,55 @@ function requestClose() {
   emit('close');
 }
 
+function addExecution(action: TradeExecutionDraft['action']) {
+  const previous = executions.value.at(-1);
+  executions.value.push({
+    action,
+    executedAt: '',
+    executedAtLocal: previous?.executedAtLocal ?? entryLocal.value,
+    fee: '0',
+    note: '',
+    price: previous?.price ?? '',
+    quantity: '',
+    reason: '',
+  });
+}
+
+function removeExecution(index: number) {
+  if (executions.value.length <= 1) return;
+  executions.value.splice(index, 1);
+}
+
+function syncLegacyFieldsFromExecutions() {
+  const entries = executions.value.filter((item) => item.action === 'entry');
+  const exits = executions.value.filter((item) => item.action === 'exit');
+  const weightedPrice = (items: TradeExecutionDraft[]) => {
+    const total = items.reduce((sum, item) => sum + Number(item.quantity), 0);
+    if (!total) return '';
+    return String(items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0) / total);
+  };
+  form.entryAt = isoDateTime(entries[0]?.executedAtLocal) ?? form.entryAt;
+  entryLocal.value = entries[0]?.executedAtLocal ?? entryLocal.value;
+  form.entryPrice = weightedPrice(entries);
+  form.positionSize = String(entries.reduce((sum, item) => sum + Number(item.quantity), 0));
+  form.entryReason = entries.map((item) => item.reason.trim()).filter(Boolean).join('；');
+  form.exitAt = isoDateTime(exits.at(-1)?.executedAtLocal) ?? null;
+  exitLocal.value = exits.at(-1)?.executedAtLocal ?? '';
+  form.exitPrice = weightedPrice(exits);
+  form.exitReason = exits.map((item) => item.reason.trim()).filter(Boolean).join('；');
+}
+
+function executionPayload() {
+  return executions.value.map(
+    ({ id, tradeId, createdAt, updatedAt, executedAtLocal, ...item }) => ({
+    ...item,
+    executedAt: isoDateTime(executedAtLocal) ?? '',
+    fee: item.fee || '0',
+    note: item.note || null,
+    }),
+  );
+}
+
 function toggleErrorTag(label: string) {
   const tags = form.errorTags ?? [];
   form.errorTags = tags.includes(label)
@@ -288,13 +370,19 @@ async function save() {
     error.value = '标的、策略和入场理由不能为空。';
     return;
   }
-  if (form.status === 'closed' && (!form.exitPrice || !form.exitReason?.trim())) {
-    error.value = '已平仓交易必须填写平仓价格和出场理由。';
+  if (executions.value.some((item) => !item.executedAtLocal || !item.price || !item.quantity || !item.reason.trim())) {
+    error.value = '每条执行明细都必须填写时间、价格、数量和理由。';
+    return;
+  }
+  const payloadExecutions = executionPayload();
+  if (payloadExecutions.filter((item) => item.action === 'entry').length === 0) {
+    error.value = '至少需要一条入场明细。';
     return;
   }
 
   saving.value = true;
   try {
+    syncLegacyFieldsFromExecutions();
     const payload: TradeInput = {
       ...form,
       entryAt: isoDateTime(entryLocal.value) ?? '',
@@ -303,6 +391,7 @@ async function save() {
       exitPrice: form.status === 'closed' ? form.exitPrice : null,
       exitReason: form.status === 'closed' ? form.exitReason : null,
       instrumentCode: form.instrumentCode || null,
+      executions: payloadExecutions,
     };
     let trade = props.trade
       ? await updateTrade(props.trade.id, payload)
@@ -360,7 +449,7 @@ onBeforeRouteLeave(
       <Form :model="form" layout="vertical" class="trade-form">
         <div class="trade-form-grid">
           <FormItem label="交易状态" required>
-            <Select v-model:value="form.status" :options="[{ label: '已平仓', value: 'closed' }, { label: '未平仓', value: 'open' }]" />
+            <Select v-model:value="form.status" :options="[{ label: '已平仓', value: 'closed' }, { label: '部分平仓', value: 'partially_closed' }, { label: '未平仓', value: 'open' }]" />
           </FormItem>
           <FormItem label="交易日期" required>
             <DatePicker v-model:value="form.tradeDate" value-format="YYYY-MM-DD" />
@@ -386,15 +475,23 @@ onBeforeRouteLeave(
         </div>
 
         <div class="form-section-title"><span>01</span> 开平仓与资金</div>
+        <FormItem label="执行明细" required>
+          <div class="execution-list">
+            <div v-for="(item, index) in executions" :key="index" class="execution-row">
+              <Select v-model:value="item.action" :options="[{ label: '入场', value: 'entry' }, { label: '出场', value: 'exit' }]" />
+              <DatePicker v-model:value="item.executedAtLocal" value-format="YYYY-MM-DDTHH:mm" show-time />
+              <Input v-model:value="item.price" placeholder="价格" inputmode="decimal" />
+              <Input v-model:value="item.quantity" placeholder="数量" inputmode="decimal" />
+              <Input v-model:value="item.reason" placeholder="执行理由" />
+              <Button danger type="text" :disabled="executions.length <= 1" @click="removeExecution(index)">删除</Button>
+            </div>
+            <Space>
+              <Button type="dashed" @click="addExecution('entry')">+ 添加入场</Button>
+              <Button type="dashed" @click="addExecution('exit')">+ 添加出场</Button>
+            </Space>
+          </div>
+        </FormItem>
         <div class="trade-form-grid">
-          <FormItem label="开仓时间" required>
-            <DatePicker v-model:value="entryLocal" value-format="YYYY-MM-DDTHH:mm" show-time />
-          </FormItem>
-          <FormItem label="开仓价" required><Input v-model:value="form.entryPrice" inputmode="decimal" /></FormItem>
-          <FormItem v-if="form.status === 'closed'" label="平仓时间" required>
-            <DatePicker v-model:value="exitLocal" value-format="YYYY-MM-DDTHH:mm" show-time />
-          </FormItem>
-          <FormItem v-if="form.status === 'closed'" label="平仓价" required><Input v-model:value="form.exitPrice" inputmode="decimal" /></FormItem>
           <FormItem label="仓位口径"><Select v-model:value="form.positionBasis" :options="[{ label: '名义金额', value: 'notional' }, { label: '数量', value: 'quantity' }]" /></FormItem>
           <FormItem label="仓位 / 名义金额" required><Input v-model:value="form.positionSize" inputmode="decimal" /></FormItem>
           <FormItem label="结算币种"><Select v-model:value="form.settlementCurrency" :options="['USDT', 'CNY', 'USD'].map((value) => ({ label: value, value }))" /></FormItem>
@@ -402,8 +499,7 @@ onBeforeRouteLeave(
           <FormItem label="计划风险金额"><Input v-model:value="form.plannedRiskAmount" inputmode="decimal" /></FormItem>
           <FormItem label="手续费税费"><Input v-model:value="form.fees" inputmode="decimal" /></FormItem>
         </div>
-        <FormItem label="入场理由" required><Textarea v-model:value="form.entryReason" :rows="3" /></FormItem>
-        <FormItem v-if="form.status === 'closed'" label="出场理由" required><Textarea v-model:value="form.exitReason" :rows="3" /></FormItem>
+        <FormItem label="执行说明"><Textarea v-model:value="form.entryReason" :rows="2" placeholder="系统会根据执行明细自动汇总入场和出场理由" /></FormItem>
 
         <div class="form-section-title"><span>02</span> 执行复盘</div>
         <div class="trade-form-grid">

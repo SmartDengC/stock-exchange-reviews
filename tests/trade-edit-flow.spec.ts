@@ -15,6 +15,7 @@ const ALLOWED_TRADE_INPUT_KEYS = new Set([
   'errorNotes',
   'errorTags',
   'executionGrade',
+  'executions',
   'exitAt',
   'exitPrice',
   'exitReason',
@@ -92,6 +93,34 @@ const sampleTrade = {
   rMultiple: '3.96',
   isWinning: true,
   holdMinutes: 60,
+  executions: [
+    {
+      id: 'execution-entry-1',
+      tradeId: 'trade-1',
+      action: 'entry',
+      executedAt: '2026-02-10T02:30:00.000Z',
+      price: '1.2',
+      quantity: '1000',
+      fee: '0',
+      reason: '突破前高后回踩确认',
+      note: null,
+      createdAt: '2026-02-10T04:00:00.000Z',
+      updatedAt: '2026-02-10T04:00:00.000Z',
+    },
+    {
+      id: 'execution-exit-1',
+      tradeId: 'trade-1',
+      action: 'exit',
+      executedAt: '2026-02-10T03:30:00.000Z',
+      price: '1.4',
+      quantity: '1000',
+      fee: '2',
+      reason: '到达目标位',
+      note: null,
+      createdAt: '2026-02-10T04:00:00.000Z',
+      updatedAt: '2026-02-10T04:00:00.000Z',
+    },
+  ],
 };
 
 function clickElement(element: Element) {
@@ -184,6 +213,16 @@ describe('trade detail drawer edit flow', () => {
     const payload = api.updateTrade.mock.calls[0][1] as Record<string, unknown>;
     const forbiddenKeys = Object.keys(payload).filter((key) => !ALLOWED_TRADE_INPUT_KEYS.has(key));
     expect(forbiddenKeys).toEqual([]);
+    expect(payload.executions).toEqual([
+      expect.objectContaining({ action: 'entry', price: '1.5' }),
+      expect.objectContaining({ action: 'exit', price: '1.4' }),
+    ]);
+    for (const execution of payload.executions as Array<Record<string, unknown>>) {
+      expect(execution).not.toHaveProperty('id');
+      expect(execution).not.toHaveProperty('tradeId');
+      expect(execution).not.toHaveProperty('createdAt');
+      expect(execution).not.toHaveProperty('updatedAt');
+    }
 
     const modal = wrapper.findComponent(TradeFormModal);
     expect(modal.props('open')).toBe(false);

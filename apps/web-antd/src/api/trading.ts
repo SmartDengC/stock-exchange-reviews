@@ -1,6 +1,7 @@
 import type {
   DailyReviewInput,
   DailyReviewView,
+  TradeExecutionInput,
   TradeInput,
   TradeListFilters,
   TradeListResponse,
@@ -78,6 +79,23 @@ function updateTrade(id: string, input: TradeInput) {
     data: input,
     method: 'PATCH',
   });
+}
+
+function createTradeExecution(tradeId: string, input: TradeExecutionInput) {
+  return requestClient.post<TradeView>(`/api/trading/trades/${tradeId}/executions`, input);
+}
+
+function updateTradeExecution(tradeId: string, executionId: string, input: TradeExecutionInput) {
+  return requestClient.request<TradeView>(
+    `/api/trading/trades/${tradeId}/executions/${executionId}`,
+    { data: input, method: 'PATCH' },
+  );
+}
+
+function deleteTradeExecution(tradeId: string, executionId: string) {
+  return requestClient.delete<TradeView>(
+    `/api/trading/trades/${tradeId}/executions/${executionId}`,
+  );
 }
 
 /**
@@ -281,9 +299,11 @@ function deleteTradingRule(id: string, version: number) {
 
 export {
   createTrade,
+  createTradeExecution,
   createTradingRule,
   deleteAttachment,
   deleteTrade,
+  deleteTradeExecution,
   deleteTradingOption,
   deleteTradingRule,
   exportUrl,
@@ -296,6 +316,7 @@ export {
   saveDailyReview,
   updateAttachment,
   updateTrade,
+  updateTradeExecution,
   updateTradingOption,
   updateTradingOptions,
   updateTradingRule,
