@@ -112,7 +112,7 @@ export function parseTradingRules(markdown: string): TradingRulesDocument {
   const title = plainText(markdown.match(/^#\s+(.+)$/m)?.[1] ?? "交易规则");
   
   // 提取最后更新时间（> 最后更新：或 > 最后更新:）
-  const updatedAt = plainText(markdown.match(/^>\s*最后更新 [：:]\s*(.+)$/m)?.[1] ?? "");
+  const updatedAt = plainText(markdown.match(/^>\s*最后更新[：:]\s*(.+)$/m)?.[1] ?? "");
   
   // 尝试解析编号规则
   const numberedRules = parseNumberedRules(markdown);

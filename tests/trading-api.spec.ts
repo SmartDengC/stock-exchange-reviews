@@ -70,4 +70,57 @@ describe('trading API adapter', () => {
       'http://localhost:8000/api/trading/export.xlsx?from=2026-08-01&q=MUUSDT',
     );
   });
+
+  /**
+   * 测试删除交易选项 API
+   * 验证 deleteTradingOption 函数调用正确的端点
+   */
+  it('deletes a trading option by id', async () => {
+    requestClient.delete.mockResolvedValue({
+      options: [],
+      settings: { defaultUsdtCnyRate: '7.2' },
+    });
+    const { deleteTradingOption } = await import('#/api/trading');
+
+    await deleteTradingOption('option-1');
+
+    expect(requestClient.delete).toHaveBeenCalledWith(
+      '/api/trading/options/option-1',
+    );
+  });
+
+  /**
+   * 测试更新单个交易选项 API
+   * 验证 updateTradingOption 函数使用 PATCH 方法更新指定选项
+   */
+  it('updates a trading option by id', async () => {
+    requestClient.request.mockResolvedValue({
+      active: false,
+      id: 'option-1',
+      kind: 'symbol',
+      label: '沪深300',
+      sortOrder: 50,
+    });
+    const { updateTradingOption } = await import('#/api/trading');
+
+    await updateTradingOption('option-1', {
+      active: false,
+      kind: 'symbol',
+      label: '沪深300',
+      sortOrder: 50,
+    });
+
+    expect(requestClient.request).toHaveBeenCalledWith(
+      '/api/trading/options/option-1',
+      {
+        data: {
+          active: false,
+          kind: 'symbol',
+          label: '沪深300',
+          sortOrder: 50,
+        },
+        method: 'PATCH',
+      },
+    );
+  });
 });

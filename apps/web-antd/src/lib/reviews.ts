@@ -9,6 +9,43 @@ export type ReviewRecord = {
   title: string;
 };
 
+/**
+ * 按归档标识排序研究复盘列表
+ * 
+ * 排序规则：
+ * - weekly 类型：按 slug 降序排序（最新的周在前面）
+ *   - 使用 numeric: true 确保周号正确排序（W10 > W09）
+ *   - 例如：2026-W10 > 2026-W09 > 2025-W52
+ * - daily 类型：保持接口返回的原始顺序
+ * 
+ * @param reviews 复盘列表
+ * @param kind 复盘类型（daily/weekly）
+ * @returns 排序后的新数组（不修改原数组）
+ * 
+ * @example
+ * // weekly 排序
+ * sortResearchReviewsByArchiveIdentifier(
+ *   [{ kind: "weekly", slug: "2025-W52" }, { kind: "weekly", slug: "2026-W10" }],
+ *   "weekly"
+ * )
+ * // 返回：[{ slug: "2026-W10" }, { slug: "2025-W52" }]
+ */
+export function sortResearchReviewsByArchiveIdentifier<
+  T extends { kind: "daily" | "weekly"; slug: string },
+>(reviews: T[], kind: "daily" | "weekly"): T[] {
+  // daily 类型保持原始顺序，直接返回
+  if (kind !== "weekly") return reviews;
+  // weekly 类型按 slug 降序排序（最新的周在前面）
+  // numeric: true 确保数字部分按数值比较（W10 > W09）
+  // sensitivity: "base" 忽略大小写差异
+  return [...reviews].sort((left, right) =>
+    right.slug.localeCompare(left.slug, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    }),
+  );
+}
+
 function isoWeekSlug(year: number, month: number, day: number): string {
   const date = new Date(Date.UTC(year, month - 1, day));
   const weekday = date.getUTCDay() || 7;

@@ -23,6 +23,7 @@ import {
 import dayjs from 'dayjs';
 
 import { isCanceledRequest, listResearchReviews } from '#/api';
+import { sortResearchReviewsByArchiveIdentifier } from '#/lib/reviews';
 import { currentTradingDate, errorMessage, formatTradingDateTime } from '#/lib/trading';
 
 const props = defineProps<{ kind: 'daily' | 'weekly' }>();
@@ -79,8 +80,14 @@ async function refresh() {
       q: query.value || undefined,
     }, controller.signal);
     if (controller.signal.aborted) return;
-    reviews.value = result;
-    archiveCache.set(cacheKey(), result);
+    // 对 weekly 复盘按周号降序排序（最新的周在前面）
+    // daily 复盘保持接口返回的原始顺序
+    const sortedReviews = sortResearchReviewsByArchiveIdentifier(
+      result,
+      props.kind,
+    );
+    reviews.value = sortedReviews;
+    archiveCache.set(cacheKey(), sortedReviews);
     await router.replace({
       query: {
         dateFrom: dateFrom.value || undefined,

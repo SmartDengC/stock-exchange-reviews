@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { generateReviewSlug } from "#/lib/reviews";
+import {
+  generateReviewSlug,
+  sortResearchReviewsByArchiveIdentifier,
+} from "#/lib/reviews";
 
 describe("generateReviewSlug", () => {
   it(String.raw`daily 从日期标签生成补零 slug（匹配服务端 ^\d{4}-\d{2}-\d{2}$ 校验）`, () => {
@@ -36,5 +39,49 @@ describe("generateReviewSlug", () => {
   it("无法解析时返回空字符串", () => {
     expect(generateReviewSlug("weekly", "第34周", "")).toBe("");
     expect(generateReviewSlug("weekly", "", "")).toBe("");
+  });
+});
+
+describe("sortResearchReviewsByArchiveIdentifier", () => {
+  /**
+   * 测试 weekly 复盘排序功能
+   * 验证：
+   * 1. 按 slug 降序排序（最新的周在前面）
+   * 2. numeric: true 确保周号正确排序（W10 > W09）
+   * 3. 不修改原数组
+   */
+  it("weekly 按标识降序排序，并正确处理周号数字大小", () => {
+    const source = [
+      { kind: "weekly" as const, slug: "2026-W09", title: "W09" },
+      { kind: "weekly" as const, slug: "2026-W10", title: "W10" },
+      { kind: "weekly" as const, slug: "2025-W52", title: "W52" },
+    ];
+
+    expect(
+      sortResearchReviewsByArchiveIdentifier(source, "weekly").map(
+        (item) => item.slug,
+      ),
+    ).toEqual(["2026-W10", "2026-W09", "2025-W52"]);
+    // 验证原数组未被修改
+    expect(source.map((item) => item.slug)).toEqual([
+      "2026-W09",
+      "2026-W10",
+      "2025-W52",
+    ]);
+  });
+
+  /**
+   * 测试 daily 复盘保持原始顺序
+   * daily 类型不应重新排序，直接返回原数组引用
+   */
+  it("daily 保持接口返回顺序", () => {
+    const source = [
+      { kind: "daily" as const, slug: "2026-08-28", title: "A" },
+      { kind: "daily" as const, slug: "2026-08-29", title: "B" },
+    ];
+
+    expect(sortResearchReviewsByArchiveIdentifier(source, "daily")).toBe(
+      source,
+    );
   });
 });

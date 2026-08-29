@@ -22,7 +22,12 @@ import {
   Switch,
 } from 'ant-design-vue';
 
-import { getTradingOptions, updateTradingOptions } from '#/api';
+import {
+  deleteTradingOption,
+  getTradingOptions,
+  updateTradingOption,
+  updateTradingOptions,
+} from '#/api';
 import PageFrame from '#/components/page-frame.vue';
 import { errorMessage } from '#/lib/trading';
 
@@ -44,7 +49,8 @@ const statusOptions = [
 const data = ref<null | TradingOptionsResponse>(null);
 const loading = ref(true);
 const failure = ref('');
-const activeAction = ref('');
+const activeAction = ref('');  // 当前正在执行操作的选项 ID（用于显示 loading 状态）
+const deletingOptionId = ref('');  // 正在删除的选项 ID（用于显示 loading 状态）
 const status = ref('');
 const statusTone = ref<'error' | 'success'>('success');
 
@@ -106,16 +112,27 @@ async function saveOption() {
   saving.value = true;
   status.value = '';
   try {
-    await updateTradingOptions({
-      options: [
-        {
-          ...(editing.value ? { id: editing.value.id } : { active: true }),
-          kind: form.kind,
-          label,
-          sortOrder: form.sortOrder,
-        },
-      ],
-    });
+    // 编辑模式：使用 updateTradingOption 按 ID 更新单个选项
+    if (editing.value) {
+      await updateTradingOption(editing.value.id, {
+        active: editing.value.active,
+        kind: form.kind,
+        label,
+        sortOrder: form.sortOrder,
+      });
+    } else {
+      // 新建模式：使用 updateTradingOptions 批量创建选项
+      await updateTradingOptions({
+        options: [
+          {
+            active: true,
+            kind: form.kind,
+            label,
+            sortOrder: form.sortOrder,
+          },
+        ],
+      });
+    }
     modalOpen.value = false;
     status.value = editing.value ? '字段已更新。' : '字段已新增。';
     statusTone.value = 'success';
@@ -128,12 +145,20 @@ async function saveOption() {
   }
 }
 
+/**
+ * 切换选项启用/停用状态
+ * 使用 updateTradingOption 按 ID 更新单个选项的 active 状态
+ * @param item 待切换的选项
+ */
 function toggleOption(item: TradingOption) {
   if (activeAction.value) return;
   activeAction.value = item.id;
   status.value = '';
-  updateTradingOptions({
-    options: [{ active: !item.active, kind: item.kind, label: item.label, sortOrder: item.sortOrder }],
+  updateTradingOption(item.id, {
+    active: !item.active,
+    kind: item.kind,
+    label: item.label,
+    sortOrder: item.sortOrder,
   })
     .then(async () => {
       status.value = `${item.label}已${item.active ? '停用' : '启用'}。`;
@@ -147,6 +172,36 @@ function toggleOption(item: TradingOption) {
     .finally(() => {
       activeAction.value = '';
     });
+}
+
+/**
+ * 删除交易选项
+ * 弹出确认对话框，确认后调用 API 删除选项
+ * @param item 待删除的选项
+ * @note 删除后重新加载选项列表
+ */
+function removeOption(item: TradingOption) {
+  Modal.confirm({
+    title: '删除录入字段',
+    content: `确定删除"${item.label}"吗？此操作不可撤销。`,
+    okText: '删除',
+    okType: 'danger',
+    cancelText: '取消',
+    onOk: async () => {
+      deletingOptionId.value = item.id;  // 设置删除中状态，显示 loading
+      status.value = '';
+      try {
+        data.value = await deleteTradingOption(item.id);
+        status.value = '字段已删除。';
+        statusTone.value = 'success';
+      } catch (error) {
+        status.value = errorMessage(error);
+        statusTone.value = 'error';
+      } finally {
+        deletingOptionId.value = '';  // 清除删除中状态
+      }
+    },
+  });
 }
 
 function clearFilters() {
@@ -204,7 +259,18 @@ onMounted(load);
               <td><strong>{{ item.label }}</strong></td>
               <td>{{ item.sortOrder }}</td>
               <td><Switch :checked="item.active" :loading="activeAction === item.id" @change="toggleOption(item)" /></td>
-              <td><Button size="small" @click="openEdit(item)">编辑</Button></td>
+              <td>
+                <Button size="small" @click="openEdit(item)">编辑</Button>
+                <Button
+                  danger
+                  size="small"
+                  :loading="deletingOptionId === item.id"
+                  style="margin-left: 0.5rem;"
+                  @click="removeOption(item)"
+                >
+                  删除
+                </Button>
+              </td>
             </tr>
           </tbody>
         </table>

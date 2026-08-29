@@ -6,6 +6,7 @@ import type {
   TradeListResponse,
   TradeView,
   TradingDashboard,
+  TradingOption,
   TradingOptionsResponse,
   TradingRule,
   TradingRuleInput,
@@ -139,6 +140,30 @@ function updateTradingOptions(input: Record<string, unknown>) {
 }
 
 /**
+ * 更新单个交易选项
+ * @param id 选项 ID
+ * @param input 更新的选项数据
+ * @returns 更新后的选项
+ */
+function updateTradingOption(id: string, input: Record<string, unknown>) {
+  return requestClient.request<TradingOption>(
+    `/api/trading/options/${id}`,
+    { data: input, method: 'PATCH' },
+  );
+}
+
+/**
+ * 删除交易选项
+ * @param id 选项 ID
+ * @returns 更新后的交易选项
+ */
+function deleteTradingOption(id: string) {
+  return requestClient.delete<TradingOptionsResponse>(
+    `/api/trading/options/${id}`,
+  );
+}
+
+/**
  * 上传交易附件
  * 支持批量上传，每笔交易最多 10 张，单张最大 15MB
  * @param id 交易 ID
@@ -259,6 +284,7 @@ export {
   createTradingRule,
   deleteAttachment,
   deleteTrade,
+  deleteTradingOption,
   deleteTradingRule,
   exportUrl,
   getDailyReview,
@@ -270,6 +296,7 @@ export {
   saveDailyReview,
   updateAttachment,
   updateTrade,
+  updateTradingOption,
   updateTradingOptions,
   updateTradingRule,
   uploadTradeAttachments,
