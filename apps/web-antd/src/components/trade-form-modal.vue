@@ -366,8 +366,8 @@ function queueFile(file: File) {
 async function save() {
   if (saving.value) return;
   error.value = '';
-  if (!form.symbol.trim() || !form.strategy.trim() || !form.entryReason.trim()) {
-    error.value = '标的、策略和入场理由不能为空。';
+  if (!form.symbol.trim() || !form.strategy.trim()) {
+    error.value = '标的和策略不能为空。';
     return;
   }
   if (executions.value.some((item) => !item.executedAtLocal || !item.price || !item.quantity || !item.reason.trim())) {
