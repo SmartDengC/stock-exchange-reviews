@@ -173,6 +173,19 @@ async function removeTrade() {
         </dl>
       </section>
 
+      <section v-if="(trade.executions ?? []).length > 0" class="market-panel">
+        <header class="panel-heading"><div><div class="page-kicker">EXECUTIONS</div><h3>执行明细</h3></div><span>{{ (trade.executions ?? []).length }} 条</span></header>
+        <div class="execution-timeline">
+          <div v-for="item in (trade.executions ?? [])" :key="item.id" class="execution-timeline-row">
+            <Tag :color="item.action === 'entry' ? 'blue' : 'orange'">{{ item.action === 'entry' ? '入场' : '出场' }}</Tag>
+            <time>{{ formatTradingDateTime(item.executedAt) }}</time>
+            <strong>{{ formatNumber(item.price, 8) }}</strong>
+            <span>{{ formatNumber(item.quantity, 4) }}</span>
+            <span>{{ item.reason }}</span>
+          </div>
+        </div>
+      </section>
+
       <div class="trade-detail-grid">
         <section class="market-panel">
           <div class="page-kicker">ENTRY</div><h3>入场</h3>

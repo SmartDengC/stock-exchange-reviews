@@ -11,7 +11,7 @@ export function sideLabel(value: string): string {
 }
 
 export function statusLabel(value: string): string {
-  return value === "closed" ? "已平仓" : "未平仓";
+  return value === "closed" ? "已平仓" : value === "partially_closed" ? "部分平仓" : "未平仓";
 }
 
 export function basisLabel(value: string): string {
