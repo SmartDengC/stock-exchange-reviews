@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import memoryRoutes from '#/router/routes/modules/memory';
@@ -64,7 +65,7 @@ describe('memory index', () => {
     document.body.innerHTML = '';
   });
 
-  it('loads the timeline with the default last seven days date range', async () => {
+  it('loads the timeline with the default last thirty days date range', async () => {
     api.listMemos.mockResolvedValueOnce({
       hasMore: false,
       items: [],
@@ -80,7 +81,7 @@ describe('memory index', () => {
     await flushPromises();
 
     expect(api.listMemos).toHaveBeenCalledWith(
-      { from: '2026-08-20', page: 1, pageSize: 20, q: undefined, to: '2026-08-27' },
+      { from: '2026-07-28', page: 1, pageSize: 20, q: undefined, to: '2026-08-27' },
       expect.any(AbortSignal),
     );
   });
@@ -111,7 +112,7 @@ describe('memory index', () => {
     );
   });
 
-  it('opens memo details in a centered modal without leaving the timeline route', async () => {
+  it('opens memo details in a right drawer with rendered Markdown', async () => {
     api.listMemos.mockResolvedValueOnce({
       hasMore: false,
       items: [listMemo],
@@ -132,7 +133,42 @@ describe('memory index', () => {
 
     expect(router.currentRoute.value.path).toBe('/memory');
     expect(api.getMemo).toHaveBeenCalledWith('memo-1');
-    expect((document.body.querySelector('.memo-detail-modal textarea') as HTMLTextAreaElement).value).toBe('弹框里的完整 Memo 详情');
+    expect(document.body.querySelector('.ant-drawer')).not.toBeNull();
+    expect(document.body.querySelector('.markdown-document')?.textContent).toContain('弹框里的完整 Memo 详情');
+    expect(document.body.querySelector('.memo-detail-modal textarea')).toBeNull();
+  });
+
+  it('opens the memo editor from the detail drawer and saves Markdown text', async () => {
+    api.listMemos.mockResolvedValueOnce({
+      hasMore: false,
+      items: [listMemo],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+    });
+    api.getMemo.mockResolvedValueOnce(detailMemo);
+    api.updateMemo.mockResolvedValueOnce({ ...detailMemo, text: '# 已编辑', version: 2 });
+    const router = createRouter({ history: createMemoryHistory(), routes: memoryRoutes });
+    await router.push('/memory');
+    await router.isReady();
+
+    const wrapper = mount(MemoryIndex, { attachTo: document.body, global: { plugins: [router] } });
+    await flushPromises();
+    await wrapper.find('.memo-list-item').trigger('click');
+    await flushPromises();
+
+    clickElement(document.body.querySelector('.ant-drawer-extra .ant-btn')!);
+    await flushPromises();
+
+    const editor = document.body.querySelector('.memo-detail-modal textarea') as HTMLTextAreaElement;
+    expect(editor).not.toBeNull();
+    editor.value = '# 已编辑';
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+    clickElement(document.body.querySelector('.memo-modal-actions .ant-btn-primary')!);
+    await flushPromises();
+
+    expect(api.updateMemo).toHaveBeenCalledWith('memo-1', { text: '# 已编辑', version: 1 });
+    expect(document.body.querySelector('.memo-detail-modal textarea')).toBeNull();
   });
 
   it('uploads pending files from the memo detail modal and renders returned images', async () => {
@@ -154,6 +190,9 @@ describe('memory index', () => {
     await wrapper.find('.memo-list-item').trigger('click');
     await flushPromises();
 
+    clickElement(document.body.querySelector('.ant-drawer-extra .ant-btn')!);
+    await flushPromises();
+
     const upload = wrapper.findComponent({ name: 'AUpload' });
     const uploadFile = new File(['png'], 'chart.png', { type: 'image/png' });
     upload.props('beforeUpload')(uploadFile);
@@ -163,6 +202,6 @@ describe('memory index', () => {
 
     expect(api.uploadMemoAttachments).toHaveBeenCalledWith('memo-1', [uploadFile]);
     expect(document.body.textContent).toContain('chart.png');
-    expect(document.body.querySelector('.memo-detail-modal img')?.getAttribute('src')).toBe('http://localhost:8000/api/memos/attachments/file-1');
+    expect(document.body.querySelector('.memo-detail-drawer img')?.getAttribute('src')).toBe('http://localhost:8000/api/memos/attachments/file-1');
   });
 });

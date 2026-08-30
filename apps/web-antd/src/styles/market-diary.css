@@ -589,6 +589,34 @@ button:active {
   gap: 1rem;
 }
 
+.memo-detail-drawer {
+  display: grid;
+  gap: 1rem;
+}
+
+.memo-content-panel {
+  padding: 1.25rem 1.35rem 1.5rem;
+}
+
+.memo-content-panel .markdown-document {
+  margin-top: 0.85rem;
+}
+
+.research-editor-modal .ant-modal {
+  max-width: calc(100vw - 2rem);
+}
+
+.research-editor-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.research-editor-fields {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(8rem, 0.8fr);
+}
+
 .memo-detail-modal .ant-modal {
   max-width: calc(100vw - 2rem);
 }
@@ -1073,6 +1101,10 @@ button:active {
   .memo-search-input {
     flex-basis: 100%;
     max-width: 100%;
+  }
+
+  .research-editor-fields {
+    grid-template-columns: 1fr;
   }
 
   .filter-strip > span { flex-basis: 100%; margin-left: 0; }

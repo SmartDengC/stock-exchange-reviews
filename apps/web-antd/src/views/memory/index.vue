@@ -4,9 +4,11 @@ import type { Memo } from '#/shared/types/memory';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import { EditOutlined } from '@ant-design/icons-vue';
 import {
   Button,
   DatePicker,
+  Drawer,
   Empty,
   Image,
   Input,
@@ -28,6 +30,7 @@ import {
   updateMemo,
   uploadMemoAttachments,
 } from '#/api';
+import MarkdownDocument from '#/components/markdown-document.vue';
 import PageFrame from '#/components/page-frame.vue';
 import { currentTradingDate, errorMessage, formatTradingDateTime } from '#/lib/trading';
 
@@ -48,6 +51,8 @@ const loading = ref(true);
 const error = ref('');
 const selectedMemoId = ref('');
 const selectedMemo = ref<Memo | null>(null);
+const detailDrawerOpen = ref(false);
+const editOpen = ref(false);
 const detailModel = reactive({ text: '' });
 const detailInitialText = ref('');
 const detailLoading = ref(false);
@@ -160,6 +165,8 @@ function onDetailFiles(fileList: File[]) {
 
 async function openMemo(id: string) {
   selectedMemoId.value = id;
+  detailDrawerOpen.value = true;
+  editOpen.value = false;
   selectedMemo.value = null;
   detailModel.text = '';
   detailInitialText.value = '';
@@ -180,7 +187,20 @@ async function openMemo(id: string) {
 }
 
 function closeMemo() {
+  detailDrawerOpen.value = false;
+}
+
+function closeEditor() {
   if (detailDirty.value && !window.confirm('Memo 还有未保存的修改，确定关闭吗？')) return;
+  editOpen.value = false;
+}
+
+function editMemo() {
+  detailDrawerOpen.value = false;
+  editOpen.value = true;
+}
+
+function clearMemo() {
   selectedMemoId.value = '';
   selectedMemo.value = null;
   detailModel.text = '';
@@ -218,6 +238,8 @@ async function saveMemo() {
     detailInitialText.value = updated.text;
     detailFiles.value = [];
     message.success('Memo 已保存');
+    editOpen.value = false;
+    detailDrawerOpen.value = true;
     await load(page.value);
   } catch (error_) {
     detailError.value = errorMessage(error_) || '保存 Memo 失败';
@@ -238,7 +260,9 @@ function removeMemo() {
     async onOk() {
       await deleteMemo(selectedMemo.value!.id);
       message.success('Memo 已删除');
-      closeMemo();
+      editOpen.value = false;
+      detailDrawerOpen.value = false;
+      clearMemo();
       await load(page.value);
     },
   });
@@ -288,8 +312,7 @@ onBeforeUnmount(() => controller?.abort());
     </Result>
     <section v-else class="market-panel memory-stream">
       <div class="memory-stream-heading">
-        <strong>{{ total }}</strong
-        ><span>条记录</span>
+        <strong>{{ total }}</strong><span>条记录</span>
       </div>
       <Empty v-if="items.length === 0" description="还没有 Memo 记录" />
       <button
@@ -323,20 +346,23 @@ onBeforeUnmount(() => controller?.abort());
       <p v-if="total > 0 && !hasMore" class="memory-end">已显示全部记录</p>
     </section>
 
-    <Modal
-      :open="Boolean(selectedMemoId)"
-      centered
-      width="min(46rem, 94vw)"
+    <Drawer
+      :open="detailDrawerOpen"
+      width="min(52rem, 96vw)"
+      placement="right"
       :destroy-on-close="true"
-      :footer="null"
-      wrap-class-name="memo-detail-modal"
       @cancel="closeMemo"
+      @close="closeMemo"
     >
-      <template #title>
+      <template #title v-if="selectedMemo">
         <div class="detail-title">
-          <span>MEMO DETAIL</span>
+          <span>MEMO · {{ formatTradingDateTime(selectedMemo.createdAt) }}</span>
           <strong>Memo 详情</strong>
         </div>
+      </template>
+
+      <template #extra v-if="selectedMemo">
+        <Button type="primary" @click="editMemo"><EditOutlined />编辑</Button>
       </template>
 
       <Skeleton v-if="detailLoading" active :paragraph="{ rows: 8 }" />
@@ -348,7 +374,52 @@ onBeforeUnmount(() => controller?.abort());
       >
         <template #extra><Button @click="openMemo(selectedMemoId)">重试</Button></template>
       </Result>
-      <div v-else-if="selectedMemo" class="memo-modal-body">
+      <div v-else-if="selectedMemo" class="memo-detail-drawer">
+        <section class="market-panel memo-content-panel">
+          <div class="page-kicker">MEMO CONTENT</div>
+          <MarkdownDocument :markdown="selectedMemo.text" />
+        </section>
+        <section v-if="selectedMemo.attachments.length > 0" class="market-panel memo-detail-attachments">
+          <h3>附件</h3>
+          <div
+            v-for="attachment in selectedMemo.attachments"
+            :key="attachment.id"
+            class="memo-attachment-card"
+          >
+            <Image
+              v-if="attachment.contentType.startsWith('image/')"
+              :src="apiUrl(attachment.accessUrl)"
+              :alt="attachment.fileName"
+              :width="72"
+              :height="72"
+              preview
+            />
+            <div>
+              <strong>{{ attachment.fileName }}</strong><small>{{ formatBytes(attachment.size) }} · {{ formatTradingDateTime(attachment.createdAt) }}</small>
+            </div>
+            <Button type="link" :href="apiUrl(attachment.accessUrl)" target="_blank">打开</Button>
+          </div>
+        </section>
+      </div>
+    </Drawer>
+
+    <Modal
+      :open="editOpen"
+      centered
+      width="min(46rem, 94vw)"
+      :destroy-on-close="true"
+      :footer="null"
+      wrap-class-name="memo-detail-modal"
+      @cancel="closeEditor"
+    >
+      <template #title>
+        <div class="detail-title">
+          <span>MEMO EDITOR</span>
+          <strong>编辑 Memo</strong>
+        </div>
+      </template>
+
+      <div v-if="selectedMemo" class="memo-modal-body">
         <textarea
           v-model="detailModel.text"
           class="memo-editor-textarea"
@@ -397,18 +468,14 @@ onBeforeUnmount(() => controller?.abort());
               preview
             />
             <div>
-              <strong>{{ attachment.fileName }}</strong
-              ><small
-                >{{ formatBytes(attachment.size) }} ·
-                {{ formatTradingDateTime(attachment.createdAt) }}</small
-              >
+              <strong>{{ attachment.fileName }}</strong><small>{{ formatBytes(attachment.size) }} · {{ formatTradingDateTime(attachment.createdAt) }}</small>
             </div>
             <Button type="link" :href="apiUrl(attachment.accessUrl)" target="_blank">打开</Button>
           </div>
         </div>
         <div class="memo-modal-actions">
           <Button danger @click="removeMemo">删除</Button>
-          <Button @click="closeMemo">关闭</Button>
+          <Button @click="closeEditor">关闭</Button>
           <Button type="primary" :loading="detailSaving" @click="saveMemo">保存</Button>
         </div>
       </div>
