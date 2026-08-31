@@ -600,6 +600,65 @@ button:active {
   gap: 1rem;
 }
 
+.memo-pinned-overview {
+  display: grid;
+  gap: 1rem;
+}
+
+.memo-pinned-heading {
+  align-items: end;
+  border-bottom: 1px solid var(--md-border);
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 0.85rem;
+}
+
+.memo-pinned-heading h2 {
+  color: var(--md-text);
+  font-size: 1.2rem;
+  margin: 0.35rem 0 0;
+}
+
+.memo-pinned-heading > span,
+.memo-pinned-version {
+  color: var(--md-muted);
+  font-size: 0.78rem;
+}
+
+.memo-pinned-card {
+  background: var(--md-surface);
+  border: 1px solid var(--md-border);
+  border-radius: 0.65rem;
+  min-width: 0;
+  padding: 1.15rem 1.25rem 1.3rem;
+}
+
+.memo-pinned-card-header {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.memo-pinned-card .markdown-document {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.memo-pinned-card .markdown-document :is(pre, table) {
+  max-width: 100%;
+}
+
+.memo-pin-mark {
+  font-size: 0.65rem;
+  margin-right: 0.2rem;
+}
+
+.memo-pinned-attachments {
+  margin-top: 1.1rem;
+}
+
 .memo-content-panel {
   min-width: 0;
   padding: 1.25rem 1.35rem 1.5rem;

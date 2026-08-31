@@ -36,4 +36,15 @@ describe('memos API adapter', () => {
       method: 'PATCH',
     });
   });
+
+  it('passes the pinned filter when loading the pinned overview', async () => {
+    requestClient.get.mockResolvedValue({ hasMore: false, items: [], page: 1, pageSize: 50, total: 0 });
+    const { listMemos } = await import('#/api/memos');
+
+    await listMemos({ page: 1, pageSize: 50, pinned: true });
+
+    expect(requestClient.get).toHaveBeenCalledWith('/api/memos', {
+      params: { page: 1, pageSize: 50, pinned: true },
+    });
+  });
 });

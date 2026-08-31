@@ -7,11 +7,12 @@ import memoryRoutes from '#/router/routes/modules/memory';
 import { generateMenus } from '../packages/utils/src/helpers/generate-menus';
 
 describe('memory routes', () => {
-  it('exposes only the timeline as a menu entry', () => {
+  it('exposes pinned overview before the timeline', () => {
     const router = createRouter({ history: createMemoryHistory(), routes: memoryRoutes });
     const menu = generateMenus(memoryRoutes, router).find((item) => item.name === '记忆中心');
 
     expect(menu?.children?.map((item) => [item.name, item.path])).toEqual([
+      ['固定 Memo 总览', '/memory/pinned'],
       ['Memo 时间流', '/memory'],
     ]);
   });
@@ -20,6 +21,7 @@ describe('memory routes', () => {
     const router = createRouter({ history: createMemoryHistory(), routes: memoryRoutes });
 
     expect(router.resolve('/memory/new').name).toBe('MemoryNew');
+    expect(router.resolve('/memory/pinned').name).toBe('MemoryPinned');
     expect(router.resolve('/memory/memo-1').name).toBe('MemoryDetail');
   });
 });

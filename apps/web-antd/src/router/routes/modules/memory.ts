@@ -4,6 +4,12 @@ const routes: RouteRecordRaw[] = [
   {
     children: [
       {
+        component: () => import('#/views/memory/pinned.vue'),
+        meta: { icon: 'lucide:pin', title: 'Memo 总览' },
+        name: 'MemoryPinned',
+        path: '/memory/pinned',
+      },
+      {
         component: () => import('#/views/memory/index.vue'),
         meta: { fullPathKey: false, icon: 'lucide:brain', title: 'Memo 时间流' },
         name: 'MemoryTimeline',

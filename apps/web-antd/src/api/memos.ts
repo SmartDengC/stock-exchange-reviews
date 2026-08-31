@@ -3,7 +3,7 @@ import type { Memo, MemoListResponse } from '#/shared/types/memory';
 import { requestClient } from './request';
 
 function listMemos(
-  params: { from?: string; page?: number; pageSize?: number; q?: string; to?: string } = {},
+  params: { from?: string; page?: number; pageSize?: number; pinned?: boolean; q?: string; to?: string } = {},
   signal?: AbortSignal,
 ) {
   return requestClient.get<MemoListResponse>('/api/memos', {
