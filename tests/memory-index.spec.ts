@@ -27,6 +27,7 @@ const listMemo = {
   attachments: [],
   createdAt: '2026-08-27T12:00:00.000Z',
   id: 'memo-1',
+  pinned: false,
   sourceType: 'text' as const,
   text: '列表里的 Memo',
   updatedAt: '2026-08-27T12:00:00.000Z',
@@ -35,7 +36,17 @@ const listMemo = {
 
 const detailMemo = {
   ...listMemo,
-  text: '弹框里的完整 Memo 详情',
+  text: `# 弹框里的完整 Memo 详情
+
+https://example.com/research/with-a-very-long-path-that-should-stay-inside-the-drawer
+
+~~~text
+some code
+~~~
+
+| 观察 | 结论 |
+| --- | --- |
+| 趋势 | 等待确认 |`,
 };
 
 const detailMemoWithAttachment = {
@@ -135,7 +146,94 @@ describe('memory index', () => {
     expect(api.getMemo).toHaveBeenCalledWith('memo-1');
     expect(document.body.querySelector('.ant-drawer')).not.toBeNull();
     expect(document.body.querySelector('.markdown-document')?.textContent).toContain('弹框里的完整 Memo 详情');
+    expect(document.body.querySelector('.memo-content-panel .markdown-document pre')).not.toBeNull();
+    expect(document.body.querySelector('.memo-content-panel .markdown-document table')).not.toBeNull();
     expect(document.body.querySelector('.memo-detail-modal textarea')).toBeNull();
+  });
+
+  it('pins a memo from the detail drawer and updates its list marker', async () => {
+    api.listMemos.mockResolvedValueOnce({
+      hasMore: false,
+      items: [listMemo],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+    });
+    api.getMemo.mockResolvedValueOnce(detailMemo);
+    api.updateMemo.mockResolvedValueOnce({ ...detailMemo, pinned: true, version: 2 });
+    const router = createRouter({ history: createMemoryHistory(), routes: memoryRoutes });
+    await router.push('/memory');
+    await router.isReady();
+
+    const wrapper = mount(MemoryIndex, { attachTo: document.body, global: { plugins: [router] } });
+    await flushPromises();
+    await wrapper.find('.memo-list-item').trigger('click');
+    await flushPromises();
+
+    clickElement(document.body.querySelector('.memo-pin-button')!);
+    await flushPromises();
+
+    expect(api.updateMemo).toHaveBeenCalledWith('memo-1', {
+      pinned: true,
+      text: detailMemo.text,
+      version: 1,
+    });
+    expect(document.body.textContent).toContain('已固定');
+    expect(router.currentRoute.value.path).toBe('/memory');
+  });
+
+  it('unpins a memo from the detail drawer', async () => {
+    const pinnedMemo = { ...listMemo, pinned: true };
+    api.listMemos.mockResolvedValueOnce({
+      hasMore: false,
+      items: [pinnedMemo],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+    });
+    api.getMemo.mockResolvedValueOnce({ ...detailMemo, pinned: true });
+    api.updateMemo.mockResolvedValueOnce({ ...detailMemo, pinned: false, version: 3 });
+    const router = createRouter({ history: createMemoryHistory(), routes: memoryRoutes });
+    await router.push('/memory');
+    await router.isReady();
+
+    const wrapper = mount(MemoryIndex, { attachTo: document.body, global: { plugins: [router] } });
+    await flushPromises();
+    await wrapper.find('.memo-list-item').trigger('click');
+    await flushPromises();
+
+    clickElement(document.body.querySelector('.memo-pin-button')!);
+    await flushPromises();
+
+    expect(api.updateMemo).toHaveBeenCalledWith('memo-1', {
+      pinned: false,
+      text: detailMemo.text,
+      version: 1,
+    });
+    expect(document.body.textContent).not.toContain('已固定');
+  });
+
+  it('marks long list content as a bounded preview instead of clipping the card body', async () => {
+    api.listMemos.mockResolvedValueOnce({
+      hasMore: false,
+      items: [{
+        ...listMemo,
+        text: Array.from({ length: 8 }, (_, index) => `${index + 1}. 一段很长的 Memo 内容`).join('\n'),
+      }],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+    });
+    const router = createRouter({ history: createMemoryHistory(), routes: memoryRoutes });
+    await router.push('/memory');
+    await router.isReady();
+
+    const wrapper = mount(MemoryIndex, { attachTo: document.body, global: { plugins: [router] } });
+    await flushPromises();
+
+    const preview = wrapper.find('.memo-list-preview');
+    expect(preview.exists()).toBe(true);
+    expect(preview.text()).toContain('1. 一段很长的 Memo 内容');
   });
 
   it('opens the memo editor from the detail drawer and saves Markdown text', async () => {
@@ -157,7 +255,7 @@ describe('memory index', () => {
     await wrapper.find('.memo-list-item').trigger('click');
     await flushPromises();
 
-    clickElement(document.body.querySelector('.ant-drawer-extra .ant-btn')!);
+    clickElement(document.body.querySelector('.ant-drawer-extra .ant-btn-primary')!);
     await flushPromises();
 
     const editor = document.body.querySelector('.memo-detail-modal textarea') as HTMLTextAreaElement;
@@ -190,7 +288,7 @@ describe('memory index', () => {
     await wrapper.find('.memo-list-item').trigger('click');
     await flushPromises();
 
-    clickElement(document.body.querySelector('.ant-drawer-extra .ant-btn')!);
+    clickElement(document.body.querySelector('.ant-drawer-extra .ant-btn-primary')!);
     await flushPromises();
 
     const upload = wrapper.findComponent({ name: 'AUpload' });

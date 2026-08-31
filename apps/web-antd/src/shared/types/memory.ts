@@ -11,6 +11,7 @@ export type Memo = {
   attachments: MemoAttachment[];
   createdAt: string;
   id: string;
+  pinned: boolean;
   sourceType: 'text';
   text: string;
   updatedAt: string;

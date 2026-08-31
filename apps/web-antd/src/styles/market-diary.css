@@ -541,6 +541,7 @@ button:active {
   cursor: pointer;
   display: grid;
   gap: 0.55rem;
+  min-width: 0;
   padding: 0.9rem;
   text-align: left;
   width: 100%;
@@ -568,12 +569,17 @@ button:active {
   font-size: 0.75rem;
 }
 
-.memo-list-item p {
+.memo-list-preview {
+  display: -webkit-box;
   line-height: 1.65;
   margin: 0;
-  max-height: 5.2rem;
+  min-width: 0;
   overflow: hidden;
+  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
   white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 .memo-attachment-summary span:not(:first-child) {
@@ -595,11 +601,18 @@ button:active {
 }
 
 .memo-content-panel {
+  min-width: 0;
   padding: 1.25rem 1.35rem 1.5rem;
 }
 
 .memo-content-panel .markdown-document {
+  min-width: 0;
   margin-top: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.memo-content-panel .markdown-document :is(pre, table) {
+  max-width: 100%;
 }
 
 .research-editor-modal .ant-modal {

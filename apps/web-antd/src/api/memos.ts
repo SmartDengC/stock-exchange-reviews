@@ -25,7 +25,7 @@ function createMemo(text: string, files: File[]) {
   });
 }
 
-function updateMemo(id: string, input: { text: string; version: number }) {
+function updateMemo(id: string, input: { pinned?: boolean; text: string; version: number }) {
   return requestClient.request<Memo>(`/api/memos/${id}`, {
     data: input,
     method: 'PATCH',

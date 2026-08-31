@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 const requestClient = {
   get: vi.fn(),
   post: vi.fn(),
+  request: vi.fn(),
 };
 
 vi.mock('#/api/request', () => ({ requestClient }));
@@ -21,6 +22,18 @@ describe('memos API adapter', () => {
     expect(requestClient.get).toHaveBeenCalledWith('/api/memos', {
       params: { from: '2026-08-20', page: 2, pageSize: 20, q: '交易计划', to: '2026-08-27' },
       signal: controller.signal,
+    });
+  });
+
+  it('passes the pinned state through the existing memo update request', async () => {
+    requestClient.request.mockResolvedValue({});
+    const { updateMemo } = await import('#/api/memos');
+
+    await updateMemo('memo-1', { pinned: true, text: 'hello', version: 3 });
+
+    expect(requestClient.request).toHaveBeenCalledWith('/api/memos/memo-1', {
+      data: { pinned: true, text: 'hello', version: 3 },
+      method: 'PATCH',
     });
   });
 });

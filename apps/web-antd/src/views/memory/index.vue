@@ -4,7 +4,7 @@ import type { Memo } from '#/shared/types/memory';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { EditOutlined } from '@ant-design/icons-vue';
+import { EditOutlined, PushpinOutlined } from '@ant-design/icons-vue';
 import {
   Button,
   DatePicker,
@@ -249,6 +249,33 @@ async function saveMemo() {
   }
 }
 
+async function toggleMemoPin() {
+  if (!selectedMemo.value || detailSaving.value) return;
+  detailSaving.value = true;
+  detailError.value = '';
+  const pinned = !selectedMemo.value.pinned;
+  try {
+    const updated = await updateMemo(selectedMemo.value.id, {
+      pinned,
+      text: selectedMemo.value.text,
+      version: selectedMemo.value.version,
+    });
+    selectedMemo.value = updated;
+    items.value = [...items.value.filter((item) => item.id !== updated.id), updated].toSorted((left, right) => {
+      if (left.pinned !== right.pinned) return left.pinned ? -1 : 1;
+      if (left.id === updated.id) return -1;
+      if (right.id === updated.id) return 1;
+      return 0;
+    });
+    message.success(pinned ? 'Memo 已固定' : 'Memo 已取消固定');
+  } catch (error_) {
+    detailError.value = errorMessage(error_) || '更新 Memo 固定状态失败';
+    message.error(detailError.value);
+  } finally {
+    detailSaving.value = false;
+  }
+}
+
 function removeMemo() {
   if (!selectedMemo.value) return;
   Modal.confirm({
@@ -324,9 +351,10 @@ onBeforeUnmount(() => controller?.abort());
       >
         <div class="memo-list-meta">
           <Tag color="green">文本 Memo</Tag>
+          <Tag v-if="item.pinned" color="blue"><PushpinOutlined />已固定</Tag>
           <span>{{ formatTradingDateTime(item.createdAt) }}</span>
         </div>
-        <p>{{ item.text || '这条 Memo 只有附件。' }}</p>
+        <p class="memo-list-preview">{{ item.text || '这条 Memo 只有附件。' }}</p>
         <div v-if="item.attachments.length > 0" class="memo-attachment-summary">
           <span>{{ item.attachments.length }} 个附件</span>
           <span v-for="attachment in item.attachments.slice(0, 3)" :key="attachment.id">{{
@@ -362,6 +390,13 @@ onBeforeUnmount(() => controller?.abort());
       </template>
 
       <template #extra v-if="selectedMemo">
+        <Button
+          class="memo-pin-button"
+          :loading="detailSaving"
+          @click="toggleMemoPin"
+        >
+          <PushpinOutlined />{{ selectedMemo.pinned ? '取消固定' : '固定' }}
+        </Button>
         <Button type="primary" @click="editMemo"><EditOutlined />编辑</Button>
       </template>
 
