@@ -780,6 +780,65 @@ button:active {
   padding: 1rem;
 }
 
+.quote-panel {
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.quote-panel .metric-grid {
+  margin-bottom: 0;
+}
+
+.quote-card {
+  min-height: 9rem;
+}
+
+.quote-card > small {
+  color: var(--md-muted);
+  font-size: 0.72rem;
+}
+
+.quote-disclaimer {
+  color: var(--md-muted);
+  font-size: 0.72rem;
+  margin: 0.8rem 0 0;
+}
+
+.config-toolbar,
+.quote-config-row,
+.quote-config-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.config-toolbar,
+.quote-config-row {
+  justify-content: space-between;
+}
+
+.quote-config-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.quote-config-row {
+  border-bottom: 1px solid var(--md-border);
+  padding: 0.8rem 0;
+}
+
+.quote-config-row > div:first-child {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.quote-config-row small,
+.quote-config-row.disabled {
+  color: var(--md-muted);
+}
+
 .metric-card > span,
 .metric-card > small {
   color: var(--md-muted);
