@@ -39,4 +39,30 @@ describe('market quote API', () => {
     expect(requestClient.put).toHaveBeenCalledWith('/api/market/quote-configs/quote-1', { ...input, version: 1 });
     expect(requestClient.delete).toHaveBeenCalledWith('/api/market/quote-configs/quote-1');
   });
+
+  it('does not submit read-only fields when updating a quote configuration', async () => {
+    const { updateMarketQuoteConfig } = await import('#/api/market');
+    const input = {
+      displayName: '恒生指数',
+      enabled: true,
+      id: 'quote-1',
+      market: '港股',
+      sinaSymbol: 'hkHSI',
+      sortOrder: 20,
+      unit: '点',
+      version: 1,
+    };
+
+    await updateMarketQuoteConfig('quote-1', input);
+
+    expect(requestClient.put).toHaveBeenLastCalledWith('/api/market/quote-configs/quote-1', {
+      displayName: '恒生指数',
+      enabled: true,
+      market: '港股',
+      sinaSymbol: 'hkHSI',
+      sortOrder: 20,
+      unit: '点',
+      version: 1,
+    });
+  });
 });

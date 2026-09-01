@@ -6,6 +6,18 @@ import type {
 
 import { requestClient } from './request';
 
+function quoteConfigPayload(input: MarketQuoteConfigInput): MarketQuoteConfigInput {
+  return {
+    displayName: input.displayName,
+    enabled: input.enabled,
+    market: input.market,
+    sinaSymbol: input.sinaSymbol,
+    sortOrder: input.sortOrder,
+    unit: input.unit,
+    ...(input.version === undefined ? {} : { version: input.version }),
+  };
+}
+
 function getMarketQuotes(signal?: AbortSignal) {
   return requestClient.get<MarketQuotesResponse>('/api/market/quotes', {
     ...(signal ? { signal } : {}),
@@ -17,11 +29,11 @@ function listMarketQuoteConfigs() {
 }
 
 function createMarketQuoteConfig(input: MarketQuoteConfigInput) {
-  return requestClient.post<MarketQuoteConfig>('/api/market/quote-configs', input);
+  return requestClient.post<MarketQuoteConfig>('/api/market/quote-configs', quoteConfigPayload(input));
 }
 
 function updateMarketQuoteConfig(id: string, input: MarketQuoteConfigInput) {
-  return requestClient.put<MarketQuoteConfig>(`/api/market/quote-configs/${id}`, input);
+  return requestClient.put<MarketQuoteConfig>(`/api/market/quote-configs/${id}`, quoteConfigPayload(input));
 }
 
 function disableMarketQuoteConfig(id: string) {

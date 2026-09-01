@@ -39,6 +39,18 @@ const configForm = reactive<MarketQuoteConfigInput>({ displayName: '', market: '
 const strongest = computed(() => tableForHeading(review.value?.content ?? '', '周度最强'));
 const weakest = computed(() => tableForHeading(review.value?.content ?? '', '周度最惨'));
 
+function assignConfigForm(input: MarketQuoteConfigInput) {
+  Object.assign(configForm, {
+    displayName: input.displayName,
+    enabled: input.enabled,
+    market: input.market,
+    sinaSymbol: input.sinaSymbol,
+    sortOrder: input.sortOrder,
+    unit: input.unit,
+    version: input.version,
+  });
+}
+
 function quoteTone(change: null | string) {
   return changeTone(change ?? '') as 'negative' | 'neutral' | 'positive';
 }
@@ -91,13 +103,13 @@ async function openConfigs() {
 
 function openCreate() {
   editingConfig.value = null;
-  Object.assign(configForm, { displayName: '', market: '', sinaSymbol: '', unit: '', sortOrder: configs.value.length * 10, enabled: true, version: undefined });
+  assignConfigForm({ displayName: '', market: '', sinaSymbol: '', unit: '', sortOrder: configs.value.length * 10, enabled: true });
   configModalOpen.value = true;
 }
 
 function openEdit(config: MarketQuoteConfig) {
   editingConfig.value = config;
-  Object.assign(configForm, { ...config, version: config.version });
+  assignConfigForm(config);
   configModalOpen.value = true;
 }
 
