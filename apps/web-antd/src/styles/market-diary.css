@@ -804,6 +804,12 @@ button:active {
   margin: 0.8rem 0 0;
 }
 
+.quote-stale {
+  color: var(--md-warning, #b45309);
+  font-size: 0.75rem;
+  margin: 0.65rem 0 0;
+}
+
 .config-toolbar,
 .quote-config-row,
 .quote-config-actions {

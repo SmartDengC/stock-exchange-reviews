@@ -65,4 +65,13 @@ describe('market quote API', () => {
       version: 1,
     });
   });
+
+  it('passes an abort signal to quote reads', async () => {
+    const { getMarketQuotes } = await import('#/api/market');
+    const signal = new AbortController().signal;
+
+    await getMarketQuotes(signal);
+
+    expect(requestClient.get).toHaveBeenLastCalledWith('/api/market/quotes', { signal });
+  });
 });

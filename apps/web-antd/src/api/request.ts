@@ -114,6 +114,7 @@ function shouldRetryGet(error: any) {
   if (isCanceledRequest(error)) return false;
   const config = error?.config;
   if (!config || config.method?.toUpperCase() !== 'GET') return false;
+  if (String(config.url ?? '').includes('/api/market/quotes')) return false;
 
   const headers = AxiosHeaders.from(config.headers);
   if (Number(headers.get('X-Request-Attempt') ?? 1) >= 2) return false;

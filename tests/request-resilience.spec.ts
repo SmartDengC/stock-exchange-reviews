@@ -74,6 +74,17 @@ describe('API request resilience', () => {
     expect(adapter).toHaveBeenCalledTimes(2);
   });
 
+  it('does not retry the upstream-backed market quote request', async () => {
+    const adapter = vi.fn(async (config: InternalAxiosRequestConfig) => {
+      throw new AxiosError('timeout', 'ECONNABORTED', config, {});
+    });
+
+    await expect(requestClient.get('/api/market/quotes', { adapter })).rejects.toMatchObject({
+      message: 'timeout',
+    });
+    expect(adapter).toHaveBeenCalledTimes(1);
+  });
+
   it('does not retry write requests', async () => {
     let timeout = 0;
     const adapter = vi.fn(async (config: InternalAxiosRequestConfig) => {

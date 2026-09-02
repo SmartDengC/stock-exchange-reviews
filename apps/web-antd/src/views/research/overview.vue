@@ -2,7 +2,7 @@
 import type { MarketQuoteConfig, MarketQuoteConfigInput, MarketQuotesResponse } from '#/types/market';
 import type { ResearchReview } from '#/types/research';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Button, Card, Drawer, Empty, Form, FormItem, Input, InputNumber, message, Modal, Popconfirm, Result, Skeleton, Switch, Tag } from 'ant-design-vue';
@@ -11,6 +11,7 @@ import {
   createMarketQuoteConfig,
   disableMarketQuoteConfig,
   getMarketQuotes,
+  isCanceledRequest,
   listMarketQuoteConfigs,
   listResearchReviews,
   updateMarketQuoteConfig,
@@ -35,6 +36,7 @@ const configSaving = ref(false);
 const configs = ref<MarketQuoteConfig[]>([]);
 const editingConfig = ref<MarketQuoteConfig | null>(null);
 const configForm = reactive<MarketQuoteConfigInput>({ displayName: '', market: '', sinaSymbol: '', unit: '', sortOrder: 0, enabled: true });
+let quoteAbortController: AbortController | null = null;
 
 const strongest = computed(() => tableForHeading(review.value?.content ?? '', '周度最强'));
 const weakest = computed(() => tableForHeading(review.value?.content ?? '', '周度最惨'));
@@ -74,14 +76,21 @@ async function loadReview() {
 }
 
 async function loadQuotes() {
+  quoteAbortController?.abort();
+  const controller = new AbortController();
+  quoteAbortController = controller;
   quoteLoading.value = true;
   quoteError.value = '';
   try {
-    quoteData.value = await getMarketQuotes();
+    quoteData.value = await getMarketQuotes(controller.signal);
   } catch (error) {
+    if (isCanceledRequest(error)) return;
     quoteError.value = errorMessage(error);
   } finally {
-    quoteLoading.value = false;
+    if (quoteAbortController === controller) {
+      quoteAbortController = null;
+      quoteLoading.value = false;
+    }
   }
 }
 
@@ -159,6 +168,7 @@ async function toggleConfig(config: MarketQuoteConfig) {
 }
 
 onMounted(() => void Promise.all([loadReview(), loadQuotes()]));
+onBeforeUnmount(() => quoteAbortController?.abort());
 </script>
 
 <template>
@@ -172,8 +182,8 @@ onMounted(() => void Promise.all([loadReview(), loadQuotes()]));
 
     <section class="market-panel quote-panel">
       <header class="panel-heading"><div><div class="page-kicker">MARKET SNAPSHOT</div><h2>市场行情</h2></div><small>{{ quoteData?.source || '新浪财经' }} · {{ quoteData ? formatQuoteTime(quoteData.fetchedAt) : '读取中' }}</small></header>
-      <Skeleton v-if="quoteLoading" active :paragraph="{ rows: 2 }" />
-      <Result v-else-if="quoteError" status="error" title="行情读取失败" :sub-title="quoteError"><template #extra><Button @click="loadQuotes">重试</Button></template></Result>
+      <Skeleton v-if="quoteLoading && !quoteData" active :paragraph="{ rows: 2 }" />
+      <Result v-else-if="quoteError && !quoteData" status="error" title="行情读取失败" :sub-title="quoteError"><template #extra><Button @click="loadQuotes">重试</Button></template></Result>
       <div v-else-if="quoteData?.items.length" class="metric-grid">
         <article v-for="item in quoteData.items" :key="item.configId" class="metric-card quote-card">
           <div class="metric-card-head"><span class="metric-label">{{ item.market }}</span><Tag :color="quoteTone(item.change)">{{ item.changePercent || '—' }}</Tag></div>
@@ -183,6 +193,7 @@ onMounted(() => void Promise.all([loadReview(), loadQuotes()]));
         </article>
       </div>
       <Empty v-else description="尚未配置行情" />
+      <p v-if="quoteError && quoteData" class="quote-stale">本次刷新失败，当前显示最近一次成功行情：{{ quoteError }}</p>
       <p class="quote-disclaimer">行情来源：新浪财经。报价可能存在延迟，行情时间以数据源返回为准。</p>
     </section>
 
