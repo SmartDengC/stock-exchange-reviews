@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useAccessStore, useUserStore } from '@vben/stores';
 
+import { Modal } from 'ant-design-vue';
 import { defineStore } from 'pinia';
 
 import {
@@ -45,6 +46,9 @@ export const useAuthStore = defineStore('market-diary-auth', () => {
   
   /** 登录请求是否正在进行中 */
   const loginLoading = ref(false);
+
+  /** 防止多个并发请求重复弹出会话过期提示 */
+  let sessionExpiryPromptOpen = false;
 
   /** 是否已登录（计算属性） */
   const loggedIn = computed(() => Boolean(currentUser.value));
@@ -156,20 +160,30 @@ export const useAuthStore = defineStore('market-diary-auth', () => {
 
   /**
    * 会话过期处理
-   * 用于处理 401 响应，保存当前页面并跳转到登录页
-   * @note 将当前页面记录到 returnTo 参数，登录后自动返回
+   * 用于处理 401 响应，保存当前页面并提示用户重新登录
+   * @note 用户确认后跳转到登录页，登录后自动返回
    */
   async function expireSession() {
     const returnTo = router.currentRoute.value.fullPath;
     clearSession();
     ready.value = true;
-    // 如果不在登录页，跳转到登录页并记录返回地址
-    if (router.currentRoute.value.path !== LOGIN_PATH) {
-      await router.replace({
-        path: LOGIN_PATH,
-        query: { returnTo },
-      });
-    }
+    // 如果不在登录页，提示用户确认后再跳转，避免并发 401 重复弹窗
+    if (router.currentRoute.value.path === LOGIN_PATH || sessionExpiryPromptOpen) return;
+
+    sessionExpiryPromptOpen = true;
+    Modal.info({
+      title: '会话已过期',
+      content: '登录会话已过期，请重新登录。',
+      okText: '确定',
+      closable: false,
+      onOk: async () => {
+        sessionExpiryPromptOpen = false;
+        await router.replace({
+          path: LOGIN_PATH,
+          query: { returnTo },
+        });
+      },
+    });
   }
 
   /**
@@ -181,6 +195,7 @@ export const useAuthStore = defineStore('market-diary-auth', () => {
     currentUser.value = null;
     ready.value = false;
     loginLoading.value = false;
+    sessionExpiryPromptOpen = false;
   }
 
   return {
