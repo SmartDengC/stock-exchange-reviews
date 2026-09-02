@@ -18,11 +18,13 @@ import {
 } from '#/api';
 import MarkdownDocument from '#/components/markdown-document.vue';
 import PageFrame from '#/components/page-frame.vue';
-import { changeTone, tableForHeading } from '#/lib/reviews';
+import { changeTone, sortResearchReviewsByArchiveIdentifier, tableForHeading } from '#/lib/reviews';
 import { errorMessage } from '#/lib/trading';
 
 const router = useRouter();
-const review = ref<null | ResearchReview>(null);
+const weeklyReview = ref<null | ResearchReview>(null);
+const dailyReview = ref<null | ResearchReview>(null);
+const readingReview = ref<null | ResearchReview>(null);
 const reviewLoading = ref(true);
 const reviewError = ref('');
 const quoteData = ref<MarketQuotesResponse | null>(null);
@@ -38,8 +40,8 @@ const editingConfig = ref<MarketQuoteConfig | null>(null);
 const configForm = reactive<MarketQuoteConfigInput>({ displayName: '', market: '', sinaSymbol: '', unit: '', sortOrder: 0, enabled: true });
 let quoteAbortController: AbortController | null = null;
 
-const strongest = computed(() => tableForHeading(review.value?.content ?? '', '周度最强'));
-const weakest = computed(() => tableForHeading(review.value?.content ?? '', '周度最惨'));
+const strongest = computed(() => tableForHeading(weeklyReview.value?.content ?? '', '周度最强'));
+const weakest = computed(() => tableForHeading(weeklyReview.value?.content ?? '', '周度最惨'));
 
 function assignConfigForm(input: MarketQuoteConfigInput) {
   Object.assign(configForm, {
@@ -62,17 +64,26 @@ function formatQuoteTime(value: null | string) {
   return new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Shanghai' }).format(new Date(value));
 }
 
-async function loadReview() {
+async function loadReviews() {
   reviewLoading.value = true;
   reviewError.value = '';
   try {
-    const reviews = await listResearchReviews({ kind: 'weekly' });
-    review.value = reviews[0] ?? null;
+    const [weeklyReviews, dailyReviews] = await Promise.all([
+      listResearchReviews({ kind: 'weekly' }),
+      listResearchReviews({ kind: 'daily' }),
+    ]);
+    weeklyReview.value = sortResearchReviewsByArchiveIdentifier(weeklyReviews, 'weekly')[0] ?? null;
+    dailyReview.value = dailyReviews[0] ?? null;
   } catch (error) {
     reviewError.value = errorMessage(error);
   } finally {
     reviewLoading.value = false;
   }
+}
+
+function openReview(review: ResearchReview) {
+  readingReview.value = review;
+  drawerOpen.value = true;
 }
 
 async function loadQuotes() {
@@ -167,12 +178,12 @@ async function toggleConfig(config: MarketQuoteConfig) {
   }
 }
 
-onMounted(() => void Promise.all([loadReview(), loadQuotes()]));
+onMounted(() => void Promise.all([loadReviews(), loadQuotes()]));
 onBeforeUnmount(() => quoteAbortController?.abort());
 </script>
 
 <template>
-  <PageFrame title="周度研究终端" :subtitle="review ? `最新资料 ${review.slug} · ${review.dateLabel}` : '跨市场表现、板块轮动与研究归档。'">
+  <PageFrame title="周度研究终端" :subtitle="weeklyReview ? `最新资料 ${weeklyReview.slug} · ${weeklyReview.dateLabel}` : '跨市场表现、板块轮动与研究归档。'">
     <template #actions>
       <Button :loading="quoteLoading" @click="loadQuotes">刷新行情</Button>
       <Button @click="openConfigs">行情配置</Button>
@@ -198,17 +209,22 @@ onBeforeUnmount(() => quoteAbortController?.abort());
     </section>
 
     <section v-if="reviewLoading" class="terminal-panel state-panel"><Skeleton active :paragraph="{ rows: 8 }" /></section>
-    <Result v-else-if="reviewError" status="error" title="读取周复盘失败" :sub-title="reviewError"><template #extra><Button @click="loadReview">重试</Button></template></Result>
-    <section v-else-if="review">
-      <div class="section-grid">
+    <Result v-else-if="reviewError" status="error" title="读取复盘失败" :sub-title="reviewError"><template #extra><Button @click="loadReviews">重试</Button></template></Result>
+    <section v-else>
+      <div v-if="weeklyReview" class="section-grid">
         <Card class="terminal-panel" :bordered="false" title="相对强势"><div v-if="strongest?.rows.length" class="rank-list"><div v-for="row in strongest.rows.slice(0, 6)" :key="row[0]"><strong>{{ row[0] }}</strong><span>{{ row[1] }}</span><small>{{ row[2] }}</small></div></div><Empty v-else description="暂无结构化强势板块数据" /></Card>
         <Card class="terminal-panel" :bordered="false" title="持续承压"><div v-if="weakest?.rows.length" class="rank-list"><div v-for="row in weakest.rows.slice(0, 6)" :key="row[0]"><strong>{{ row[0] }}</strong><span>{{ row[1] }}</span><small>{{ row[2] }}</small></div></div><Empty v-else description="暂无结构化弱势板块数据" /></Card>
-        <Card class="terminal-panel wide research-source" :bordered="false"><Tag color="green">{{ review.slug }}</Tag><h2>{{ review.title }}</h2><p>{{ review.dateLabel }}</p><div class="page-actions"><Button @click="drawerOpen = true">快速阅读</Button><Button type="primary" @click="router.push(`/report/weekly/${review.slug}`)">打开完整报告</Button></div></Card>
       </div>
+      <div class="section-grid">
+        <Card v-if="weeklyReview" class="terminal-panel research-source weekly-review-card" :bordered="false"><div class="review-card-kicker">最新周复盘</div><Tag color="green">{{ weeklyReview.slug }}</Tag><h2>{{ weeklyReview.title }}</h2><p>{{ weeklyReview.dateLabel }}</p><div class="page-actions"><Button @click="openReview(weeklyReview)">快速阅读</Button><Button type="primary" @click="router.push(`/report/weekly/${weeklyReview.slug}`)">打开完整报告</Button></div></Card>
+        <Card v-else class="terminal-panel" :bordered="false"><Empty description="暂无周复盘" /></Card>
+        <Card v-if="dailyReview" class="terminal-panel research-source daily-review-card" :bordered="false"><div class="review-card-kicker">最新日复盘</div><Tag color="green">{{ dailyReview.slug }}</Tag><h2>{{ dailyReview.title }}</h2><p>{{ dailyReview.dateLabel }}</p><div class="page-actions"><Button @click="openReview(dailyReview)">快速阅读</Button><Button type="primary" @click="router.push(`/report/daily/${dailyReview.slug}`)">打开完整报告</Button></div></Card>
+        <Card v-else class="terminal-panel" :bordered="false"><Empty description="暂无日复盘" /></Card>
+      </div>
+      <section v-if="!weeklyReview && !dailyReview" class="terminal-panel state-panel"><Empty description="尚未创建复盘" /></section>
     </section>
-    <section v-else class="terminal-panel state-panel"><Empty description="尚未创建周复盘"><Button type="primary" @click="router.push('/research/edit/weekly')">新建周复盘</Button></Empty></section>
 
-    <Drawer v-model:open="drawerOpen" width="min(52rem, 92vw)" :title="review?.title"><MarkdownDocument v-if="review" :markdown="review.content" /></Drawer>
+    <Drawer v-model:open="drawerOpen" width="min(52rem, 92vw)" :title="readingReview?.title"><MarkdownDocument v-if="readingReview" :markdown="readingReview.content" /></Drawer>
     <Drawer v-model:open="configOpen" title="行情配置" width="min(38rem, 92vw)">
       <div class="config-toolbar"><span class="muted">启用的行情会显示在总览卡片中。</span><Button type="primary" @click="openCreate">新增行情</Button></div>
       <Skeleton v-if="configLoading" active />
