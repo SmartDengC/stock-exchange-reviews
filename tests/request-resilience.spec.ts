@@ -24,7 +24,7 @@ function successResponse(
 }
 
 describe('API request resilience', () => {
-  it('retries a timed out JSON GET once with the same request id', async () => {
+  it('uses the request client default timeout for a generic JSON GET retry', async () => {
     const attempts: Array<{ attempt: string; requestId: string; timeout: number }> = [];
     const adapter = vi.fn(async (config: InternalAxiosRequestConfig) => {
       attempts.push({
@@ -44,7 +44,7 @@ describe('API request resilience', () => {
     expect(attempts.map(({ attempt }) => attempt)).toEqual(['1', '2']);
     expect(attempts[0]?.requestId).toBeTruthy();
     expect(attempts[1]?.requestId).toBe(attempts[0]?.requestId);
-    expect(attempts.map(({ timeout }) => timeout)).toEqual([8000, 8000]);
+    expect(attempts.map(({ timeout }) => timeout)).toEqual([30_000, 30_000]);
   });
 
   it.each([502, 503, 504])('retries a GET after HTTP %s', async (status) => {

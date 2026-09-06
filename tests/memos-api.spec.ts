@@ -9,7 +9,7 @@ const requestClient = {
 vi.mock('#/api/request', () => ({ requestClient }));
 
 describe('memos API adapter', () => {
-  it('passes query text, date filters, pagination, and cancellation signal', async () => {
+  it('uses a 15-second timeout for a memo list query', async () => {
     requestClient.get.mockResolvedValue({ hasMore: false, items: [], page: 1, pageSize: 20, total: 0 });
     const { listMemos } = await import('#/api/memos');
     const controller = new AbortController();
@@ -22,6 +22,7 @@ describe('memos API adapter', () => {
     expect(requestClient.get).toHaveBeenCalledWith('/api/memos', {
       params: { from: '2026-08-20', page: 2, pageSize: 20, q: '交易计划', to: '2026-08-27' },
       signal: controller.signal,
+      timeout: 15_000,
     });
   });
 
@@ -45,6 +46,7 @@ describe('memos API adapter', () => {
 
     expect(requestClient.get).toHaveBeenCalledWith('/api/memos', {
       params: { page: 1, pageSize: 50, pinned: true },
+      timeout: 15_000,
     });
   });
 });

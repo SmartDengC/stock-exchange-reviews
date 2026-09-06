@@ -10,7 +10,6 @@ type UnauthorizedHandler = () => Promise<void> | void;
 
 let unauthorizedHandler: UnauthorizedHandler | undefined;
 
-const GET_TIMEOUT_MS = 8000;
 const GET_RETRY_DELAY_MS = 300;
 const RETRYABLE_NETWORK_CODES = new Set([
   'EAI_AGAIN',
@@ -51,9 +50,6 @@ requestClient.addRequestInterceptor({
       headers.set('X-Request-Attempt', '1');
     }
     config.headers = headers;
-    if (config.method?.toUpperCase() === 'GET' && config.responseType !== 'blob') {
-      config.timeout = GET_TIMEOUT_MS;
-    }
     return config;
   },
 });

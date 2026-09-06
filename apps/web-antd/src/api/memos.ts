@@ -2,12 +2,15 @@ import type { Memo, MemoListResponse } from '#/shared/types/memory';
 
 import { requestClient } from './request';
 
+const MEMO_LIST_TIMEOUT_MS = 15_000;
+
 function listMemos(
   params: { from?: string; page?: number; pageSize?: number; pinned?: boolean; q?: string; to?: string } = {},
   signal?: AbortSignal,
 ) {
   return requestClient.get<MemoListResponse>('/api/memos', {
     params,
+    timeout: MEMO_LIST_TIMEOUT_MS,
     ...(signal ? { signal } : {}),
   });
 }
