@@ -19,28 +19,21 @@ const productionEnv = readFileSync(
   'utf8',
 );
 
-describe('Vercel proxy configuration', () => {
-  it('proxies API requests before applying the SPA fallback', () => {
+describe('Vercel static deployment configuration', () => {
+  it('uses the filesystem API function and reserves rewrites for the SPA fallback', () => {
     expect(config.rewrites).toEqual([
-      {
-        destination: 'https://hahadeng.cn/api/:path*',
-        source: '/api/:path*',
-      },
       { destination: '/index.html', source: '/(.*)' },
     ]);
-  });
-
-  it('prevents private API responses from being cached', () => {
     expect(config.headers).toContainEqual({
-      headers: [
-        { key: 'Cache-Control', value: 'private, no-store' },
-        { key: 'x-vercel-enable-rewrite-caching', value: '0' },
-      ],
+      headers: [{ key: 'Cache-Control', value: 'private, no-store' }],
       source: '/api/:path*',
     });
   });
 
-  it('keeps browser API requests on the Vercel origin', () => {
+  it('keeps browser API requests on the Vercel origin and runs the proxy in Hong Kong', () => {
     expect(productionEnv).toMatch(/^VITE_GLOB_API_URL=$/m);
+    expect(readFileSync(resolve(process.cwd(), 'api/[...path].ts'), 'utf8')).toContain(
+      "regions: ['hkg1']",
+    );
   });
 });

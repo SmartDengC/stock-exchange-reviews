@@ -59,7 +59,10 @@ describe('trading API adapter', () => {
     for (const call of requestClient.post.mock.calls) {
       expect(call[0]).toBe('/api/trading/trades/trade-1/attachments');
       expect(call[1]).toBeInstanceOf(FormData);
-      expect(call[2]).toEqual({ headers: { 'Content-Type': 'multipart/form-data' } });
+      expect(call[2]).toEqual({
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60_000,
+      });
       expect((call[1] as FormData).get('file')).toBeInstanceOf(File);
     }
   });

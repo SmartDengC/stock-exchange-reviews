@@ -196,7 +196,10 @@ function uploadTradeAttachments(id: string, files: File[]) {
       return requestClient.post(
         `/api/trading/trades/${id}/attachments`,
         form,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 60_000,
+        },
       );
     }),
   );
