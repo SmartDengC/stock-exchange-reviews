@@ -11,8 +11,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "pnpm exec tsdown",
-    "stub": "pnpm run build"
+    "build": "corepack pnpm exec tsdown",
+    "stub": "corepack pnpm run build"
   },
   "files": [
     "dist"
