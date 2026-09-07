@@ -22,6 +22,7 @@ const productionEnv = readFileSync(
 describe('Vercel static deployment configuration', () => {
   it('uses the filesystem API function and reserves rewrites for the SPA fallback', () => {
     expect(config.rewrites).toEqual([
+      { destination: '/api/proxy?__path=:__vcp', source: '/api/:__vcp*' },
       { destination: '/index.html', source: '/(.*)' },
     ]);
     expect(config.headers).toContainEqual({
@@ -32,7 +33,7 @@ describe('Vercel static deployment configuration', () => {
 
   it('keeps browser API requests on the Vercel origin and runs the proxy in Hong Kong', () => {
     expect(productionEnv).toMatch(/^VITE_GLOB_API_URL=$/m);
-    expect(readFileSync(resolve(process.cwd(), 'api/[...path].ts'), 'utf8')).toContain(
+    expect(readFileSync(resolve(process.cwd(), 'api/proxy.ts'), 'utf8')).toContain(
       "regions: ['hkg1']",
     );
   });

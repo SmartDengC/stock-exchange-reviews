@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import apiProxy, { proxyTimeoutMs } from '../api/[...path]';
+import apiProxy, { proxyTimeoutMs } from '../api/proxy';
 
 const originalFetch = globalThis.fetch;
 
@@ -21,7 +21,7 @@ describe('HKG API proxy', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const response = await apiProxy(
-      new Request('https://se.vdcc.cn/api/auth/session?trace=1', {
+      new Request('https://se.vdcc.cn/api/proxy?__path=auth/session&__vcp=auth/session&trace=1&path=keep-me', {
         headers: {
           Cookie: 'trading_session=secret-cookie',
           Host: 'se.vdcc.cn',
@@ -35,7 +35,7 @@ describe('HKG API proxy', () => {
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://hahadeng.cn/api/auth/session?trace=1',
+      'https://hahadeng.cn/api/auth/session?trace=1&path=keep-me',
       expect.objectContaining({ method: 'GET', redirect: 'manual' }),
     );
     const [, init] = fetchMock.mock.calls[0] ?? [];
@@ -68,30 +68,30 @@ describe('HKG API proxy', () => {
       ),
     );
 
-    const response = await apiProxy(new Request('https://se.vdcc.cn/api/auth/login'));
+    const response = await apiProxy(new Request('https://se.vdcc.cn/api/proxy?__path=auth/login'));
 
     expect(response.status).toBe(200);
     expect(response.headers.get('set-cookie')).toContain('trading_session=next-cookie');
   });
 
   it('uses the selected upstream timeout budgets', () => {
-    expect(proxyTimeoutMs(new Request('https://se.vdcc.cn/api/trading/trades'))).toBe(10_000);
+    expect(proxyTimeoutMs(new Request('https://se.vdcc.cn/api/proxy?__path=trading/trades'))).toBe(10_000);
     expect(
       proxyTimeoutMs(
-        new Request('https://se.vdcc.cn/api/trading/trades', { method: 'POST', body: '{}' }),
+        new Request('https://se.vdcc.cn/api/proxy?__path=trading/trades', { method: 'POST', body: '{}' }),
       ),
     ).toBe(28_000);
     expect(
       proxyTimeoutMs(
-        new Request('https://se.vdcc.cn/api/trading/trades/1/attachments', {
+        new Request('https://se.vdcc.cn/api/proxy?__path=trading/trades/1/attachments', {
           body: new FormData(),
           method: 'POST',
         }),
       ),
     ).toBe(60_000);
-    expect(proxyTimeoutMs(new Request('https://se.vdcc.cn/api/trading/export.xlsx'))).toBe(60_000);
+    expect(proxyTimeoutMs(new Request('https://se.vdcc.cn/api/proxy?__path=trading/export.xlsx'))).toBe(60_000);
     expect(
-      proxyTimeoutMs(new Request('https://se.vdcc.cn/api/trading/trades/1/attachments/2')),
+      proxyTimeoutMs(new Request('https://se.vdcc.cn/api/proxy?__path=trading/trades/1/attachments/2')),
     ).toBe(60_000);
   });
 
@@ -100,7 +100,7 @@ describe('HKG API proxy', () => {
     vi.stubGlobal('fetch', fetchMock);
     const form = new FormData();
     form.append('file', new Blob(['image']), 'chart.png');
-    const request = new Request('https://se.vdcc.cn/api/trading/trades/trade-1/attachments', {
+    const request = new Request('https://se.vdcc.cn/api/proxy?__path=trading/trades/trade-1/attachments', {
       body: form,
       method: 'POST',
     });
@@ -117,7 +117,7 @@ describe('HKG API proxy', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new DOMException('Timed out', 'TimeoutError')));
 
     const response = await apiProxy(
-      new Request('https://se.vdcc.cn/api/trading/trades?token=secret-query', {
+      new Request('https://se.vdcc.cn/api/proxy?__path=trading/trades&token=secret-query', {
         headers: { Cookie: 'trading_session=secret-cookie', 'X-Request-ID': 'request-504' },
       }),
     );
@@ -134,7 +134,7 @@ describe('HKG API proxy', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('connection failed')));
 
     const response = await apiProxy(
-      new Request('https://se.vdcc.cn/api/trading/trades?token=secret-query', {
+      new Request('https://se.vdcc.cn/api/proxy?__path=trading/trades&token=secret-query', {
         headers: { Cookie: 'trading_session=secret-cookie', 'X-Request-ID': 'request-502' },
       }),
     );

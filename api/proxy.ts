@@ -1,5 +1,7 @@
 const API_ORIGIN = 'https://hahadeng.cn';
 const PROXY_REGION = 'hkg1';
+const PROXY_PATH_QUERY = '__path';
+const PROXY_REWRITE_QUERY = '__vcp';
 const SLOW_REQUEST_MS = 1_000;
 
 const HOP_BY_HOP_HEADERS = new Set([
@@ -18,8 +20,18 @@ export const config = {
   regions: ['hkg1'],
 };
 
+function publicApiPath(request: Request): string | null {
+  const path = new URL(request.url).searchParams.get(PROXY_PATH_QUERY);
+
+  if (!path || path.split('/').some((segment) => !segment || segment === '.' || segment === '..')) {
+    return null;
+  }
+
+  return `/api/${path}`;
+}
+
 export function proxyTimeoutMs(request: Request): number {
-  const pathname = new URL(request.url).pathname;
+  const pathname = publicApiPath(request) ?? new URL(request.url).pathname;
   const contentType = request.headers.get('content-type') ?? '';
 
   if (
@@ -46,7 +58,7 @@ function upstreamHeaders(request: Request, requestId: string): Headers {
   return headers;
 }
 
-function errorResponse(status: 502 | 504, message: string, requestId: string): Response {
+function errorResponse(status: 400 | 502 | 504, message: string, requestId: string): Response {
   return Response.json(
     { message },
     {
@@ -66,15 +78,16 @@ function isTimeout(error: unknown): boolean {
 
 function logProxyEvent(
   event: 'api_proxy_failed' | 'api_proxy_slow' | 'api_proxy_timeout',
-  request: Request,
+  method: string,
+  path: string,
   requestId: string,
   durationMs: number,
   status?: number,
 ): void {
   console.warn(event, {
     durationMs: Math.round(durationMs),
-    method: request.method,
-    path: new URL(request.url).pathname,
+    method,
+    path,
     requestId,
     ...(status === undefined ? {} : { status }),
   });
@@ -83,11 +96,20 @@ function logProxyEvent(
 export default async function apiProxy(request: Request): Promise<Response> {
   const requestUrl = new URL(request.url);
   const requestId = request.headers.get('X-Request-ID') || crypto.randomUUID();
+  const publicPath = publicApiPath(request);
+
+  if (!publicPath) {
+    return errorResponse(400, '代理路径无效', requestId);
+  }
+
   const startedAt = performance.now();
-  const upstreamUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, API_ORIGIN).toString();
+  requestUrl.searchParams.delete(PROXY_PATH_QUERY);
+  requestUrl.searchParams.delete(PROXY_REWRITE_QUERY);
+  const upstreamUrl = new URL(publicPath, API_ORIGIN);
+  upstreamUrl.search = requestUrl.search;
 
   try {
-    const upstream = await fetch(upstreamUrl, {
+    const upstream = await fetch(upstreamUrl.toString(), {
       body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
       headers: upstreamHeaders(request, requestId),
       method: request.method,
@@ -97,7 +119,7 @@ export default async function apiProxy(request: Request): Promise<Response> {
     const durationMs = performance.now() - startedAt;
 
     if (durationMs >= SLOW_REQUEST_MS) {
-      logProxyEvent('api_proxy_slow', request, requestId, durationMs, upstream.status);
+      logProxyEvent('api_proxy_slow', request.method, publicPath, requestId, durationMs, upstream.status);
     }
 
     const response = new Response(upstream.body, {
@@ -114,7 +136,13 @@ export default async function apiProxy(request: Request): Promise<Response> {
   } catch (error) {
     const durationMs = performance.now() - startedAt;
     const timedOut = isTimeout(error);
-    logProxyEvent(timedOut ? 'api_proxy_timeout' : 'api_proxy_failed', request, requestId, durationMs);
+    logProxyEvent(
+      timedOut ? 'api_proxy_timeout' : 'api_proxy_failed',
+      request.method,
+      publicPath,
+      requestId,
+      durationMs,
+    );
     return errorResponse(
       timedOut ? 504 : 502,
       timedOut ? '后端响应超时，请稍后重试' : '后端连接失败，请稍后重试',

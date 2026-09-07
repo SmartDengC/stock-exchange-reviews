@@ -11,6 +11,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/:__vcp*", "destination": "/api/proxy?__path=:__vcp" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
