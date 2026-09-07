@@ -1,5 +1,5 @@
 const API_ORIGIN = 'https://hahadeng.cn';
-const PROXY_REGION = 'hkg1';
+const PROXY_REGION = 'hnd1';
 const PROXY_PATH_QUERY = '__path';
 const PROXY_REWRITE_QUERY = '__vcp';
 const SLOW_REQUEST_MS = 1_000;
@@ -17,7 +17,7 @@ const HOP_BY_HOP_HEADERS = new Set([
 
 export const config = {
   runtime: 'edge',
-  regions: ['hkg1'],
+  regions: ['hnd1'],
 };
 
 function publicApiPath(request: Request): string | null {

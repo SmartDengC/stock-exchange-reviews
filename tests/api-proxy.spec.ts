@@ -11,7 +11,7 @@ afterEach(() => {
   vi.stubGlobal('fetch', originalFetch);
 });
 
-describe('HKG API proxy', () => {
+describe('regional API proxy', () => {
   it('forwards the path, query, session cookie, origin, and request ID to the API origin', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response('{"loggedIn":true}', {
@@ -50,7 +50,7 @@ describe('HKG API proxy', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ loggedIn: true });
     expect(response.headers.get('cache-control')).toBe('private, no-store');
-    expect(response.headers.get('x-api-proxy')).toBe('hkg1');
+    expect(response.headers.get('x-api-proxy')).toBe('hnd1');
     expect(response.headers.get('x-request-id')).toBe('request-123');
   });
 

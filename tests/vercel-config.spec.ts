@@ -31,10 +31,10 @@ describe('Vercel static deployment configuration', () => {
     });
   });
 
-  it('keeps browser API requests on the Vercel origin and runs the proxy in Hong Kong', () => {
+  it('keeps browser API requests on the Vercel origin and runs the proxy in Tokyo', () => {
     expect(productionEnv).toMatch(/^VITE_GLOB_API_URL=$/m);
     expect(readFileSync(resolve(process.cwd(), 'api/proxy.ts'), 'utf8')).toContain(
-      "regions: ['hkg1']",
+      "regions: ['hnd1']",
     );
   });
 });
