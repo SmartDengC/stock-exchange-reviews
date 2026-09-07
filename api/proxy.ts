@@ -59,21 +59,28 @@ function upstreamHeaders(request: Request, requestId: string): Headers {
 }
 
 function errorResponse(status: 400 | 502 | 504, message: string, requestId: string): Response {
-  return Response.json(
-    { message },
-    {
-      status,
-      headers: {
-        'Cache-Control': 'private, no-store',
-        'X-API-Proxy': PROXY_REGION,
-        'X-Request-ID': requestId,
-      },
+  return new Response(JSON.stringify({ message }), {
+    status,
+    headers: {
+      'Cache-Control': 'private, no-store',
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-API-Proxy': PROXY_REGION,
+      'X-Request-ID': requestId,
     },
-  );
+  });
 }
 
 function isTimeout(error: unknown): boolean {
-  return error instanceof DOMException && (error.name === 'AbortError' || error.name === 'TimeoutError');
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    ((error.name === 'AbortError' || error.name === 'TimeoutError') as boolean)
+  );
+}
+
+function fallbackRequestId(): string {
+  return `edge-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
 function logProxyEvent(
@@ -94,21 +101,20 @@ function logProxyEvent(
 }
 
 export default async function apiProxy(request: Request): Promise<Response> {
-  const requestUrl = new URL(request.url);
-  const requestId = request.headers.get('X-Request-ID') || crypto.randomUUID();
+  const startedAt = Date.now();
+  const requestId = request.headers.get('X-Request-ID') || fallbackRequestId();
   const publicPath = publicApiPath(request);
 
-  if (!publicPath) {
-    return errorResponse(400, '代理路径无效', requestId);
-  }
-
-  const startedAt = performance.now();
-  requestUrl.searchParams.delete(PROXY_PATH_QUERY);
-  requestUrl.searchParams.delete(PROXY_REWRITE_QUERY);
-  const upstreamUrl = new URL(publicPath, API_ORIGIN);
-  upstreamUrl.search = requestUrl.search;
-
   try {
+    if (!publicPath) {
+      return errorResponse(400, '代理路径无效', requestId);
+    }
+
+    const requestUrl = new URL(request.url);
+    requestUrl.searchParams.delete(PROXY_PATH_QUERY);
+    requestUrl.searchParams.delete(PROXY_REWRITE_QUERY);
+    const upstreamUrl = new URL(publicPath, API_ORIGIN);
+    upstreamUrl.search = requestUrl.search;
     const upstream = await fetch(upstreamUrl.toString(), {
       body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
       headers: upstreamHeaders(request, requestId),
@@ -116,7 +122,7 @@ export default async function apiProxy(request: Request): Promise<Response> {
       redirect: 'manual',
       signal: AbortSignal.timeout(proxyTimeoutMs(request)),
     });
-    const durationMs = performance.now() - startedAt;
+    const durationMs = Date.now() - startedAt;
 
     if (durationMs >= SLOW_REQUEST_MS) {
       logProxyEvent('api_proxy_slow', request.method, publicPath, requestId, durationMs, upstream.status);
@@ -134,12 +140,12 @@ export default async function apiProxy(request: Request): Promise<Response> {
     }
     return response;
   } catch (error) {
-    const durationMs = performance.now() - startedAt;
+    const durationMs = Date.now() - startedAt;
     const timedOut = isTimeout(error);
     logProxyEvent(
       timedOut ? 'api_proxy_timeout' : 'api_proxy_failed',
       request.method,
-      publicPath,
+      publicPath ?? '/api',
       requestId,
       durationMs,
     );
