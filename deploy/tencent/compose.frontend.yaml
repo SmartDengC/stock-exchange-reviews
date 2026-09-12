@@ -1,0 +1,21 @@
+name: market-diary-frontend
+
+services:
+  frontend:
+    image: market-diary-frontend:production
+    build:
+      context: ../..
+      dockerfile: scripts/deploy/Dockerfile
+      args:
+        BACKEND_API_HOST: ${BACKEND_API_HOST:-hahadeng.cn}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    mem_limit: 512m
+    cpus: 1
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

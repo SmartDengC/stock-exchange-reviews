@@ -93,6 +93,57 @@ pnpm run build
 pnpm run check
 ```
 
+## 服务器 Docker 部署
+
+前端可以部署在独立服务器，浏览器访问前端服务器的地址，Nginx 再把同源的 `/api/*` 转发到已部署的 Trading Cloud Caddy。物理服务器不同，但浏览器只看到一个 origin，因此现有 HttpOnly 会话 Cookie、附件和 Excel 下载不需要改成跨域调用。
+
+### 前端服务器
+
+在 `deploy/tencent` 目录准备 Compose 参数。`BACKEND_API_HOST` 只填写后端 Caddy 的域名，不要填写 `https://` 或路径：
+
+```bash
+cd deploy/tencent
+cp .env.example .env
+export BACKEND_API_HOST=hahadeng.cn
+export FRONTEND_PORT=8080
+
+docker compose -f compose.frontend.yaml config
+docker compose -f compose.frontend.yaml build
+docker compose -f compose.frontend.yaml up -d
+docker compose -f compose.frontend.yaml ps
+```
+
+验证静态页面和同源 API 代理：
+
+```bash
+curl -I http://前端服务器IP:8080
+curl -i http://前端服务器IP:8080/api/health/live
+```
+
+前端镜像构建时会把 `BACKEND_API_HOST` 注入 Nginx。普通 API 请求读取超时为 120 秒，附件上传、附件下载和 Excel 导出为 300 秒。
+
+### 后端服务器
+
+在 `trading-cloud/deploy/aliyun/.env` 中填写前端服务器的实际公开地址：
+
+```dotenv
+TRADING_FRONTEND_ORIGINS=http://前端服务器IP:8080
+TRADING_PUBLIC_BASE_URL=http://前端服务器IP:8080
+TRADING_SESSION_COOKIE_DOMAIN=
+TRADING_SESSION_SECURE=false
+```
+
+修改后重建容器配置：
+
+```bash
+cd trading-cloud/deploy/aliyun
+docker compose up -d --force-recreate api caddy
+docker compose ps
+docker compose logs --tail=100 api caddy
+```
+
+`SESSION_SECURE=false` 只适用于临时 HTTP IP、内网或 VPN。公网正式部署应给前端服务器绑定域名并启用 HTTPS，然后将两个地址改为 HTTPS 域名、恢复 `TRADING_SESSION_SECURE=true`。后端 FastAPI 的 8000 端口继续不对外暴露，后端防火墙可只允许前端服务器访问 443。
+
 ## Vercel 部署
 
 仓库根目录的 `vercel.json` 会构建 `apps/web-antd`、发布其 `dist`，并按以下顺序处理请求：
@@ -112,7 +163,7 @@ VITE_GLOB_API_URL=
 Trading Cloud 服务器使用：
 
 ```dotenv
-TRADING_FRONTEND_ORIGIN=https://se.xxxx.cn
+TRADING_FRONTEND_ORIGINS=https://se.xxxx.cn
 TRADING_PUBLIC_BASE_URL=https://se.xxxx.cn
 TRADING_SESSION_SECURE=true
 TRADING_SESSION_COOKIE_DOMAIN=
