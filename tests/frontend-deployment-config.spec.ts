@@ -10,6 +10,7 @@ const compose = readFileSync(resolve(root, 'deploy/tencent/compose.frontend.yaml
 
 describe('frontend server deployment configuration', () => {
   it('builds the web-antd application and serves its dist output', () => {
+    expect(dockerfile).not.toContain('--mount=type=cache');
     expect(dockerfile).toContain('RUN pnpm run build');
     expect(dockerfile).toContain(
       'COPY --from=builder /app/apps/web-antd/dist /usr/share/nginx/html',
