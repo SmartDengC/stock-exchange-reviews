@@ -11,6 +11,9 @@ const compose = readFileSync(resolve(root, 'deploy/tencent/compose.frontend.yaml
 describe('frontend server deployment configuration', () => {
   it('builds the web-antd application and serves its dist output', () => {
     expect(dockerfile).not.toContain('--mount=type=cache');
+    expect(dockerfile).toContain('fetch-retries 5');
+    expect(dockerfile).toContain('fetch-timeout 300000');
+    expect(dockerfile).toContain('network-concurrency 4');
     expect(dockerfile).toContain('RUN pnpm run build');
     expect(dockerfile).toContain(
       'COPY --from=builder /app/apps/web-antd/dist /usr/share/nginx/html',
@@ -33,6 +36,7 @@ describe('frontend server deployment configuration', () => {
   it('exposes the frontend on host port 8090 and passes the backend host at build time', () => {
     expect(compose).toContain('dockerfile: scripts/deploy/Dockerfile');
     expect(compose).toContain('BACKEND_API_HOST: ${BACKEND_API_HOST:-hahadeng.cn}');
+    expect(compose).toContain('NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}');
     expect(compose).toContain('"${FRONTEND_PORT:-8090}:8080"');
   });
 });

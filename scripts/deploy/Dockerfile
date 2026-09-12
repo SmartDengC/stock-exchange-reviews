@@ -1,5 +1,7 @@
 FROM node:22-slim AS builder
 
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+
 # --max-old-space-size
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -15,7 +17,14 @@ WORKDIR /app
 COPY . /app
 
 # 安装依赖
-RUN pnpm install --frozen-lockfile
+RUN pnpm config set registry "$NPM_REGISTRY" \
+    && pnpm config set fetch-retries 5 \
+    && pnpm config set fetch-retry-factor 2 \
+    && pnpm config set fetch-retry-mintimeout 10000 \
+    && pnpm config set fetch-retry-maxtimeout 120000 \
+    && pnpm config set fetch-timeout 300000 \
+    && pnpm config set network-concurrency 4 \
+    && pnpm install --frozen-lockfile
 RUN pnpm run build
 
 RUN echo "Builder Success 🎉"

@@ -8,6 +8,7 @@ services:
       dockerfile: scripts/deploy/Dockerfile
       args:
         BACKEND_API_HOST: ${BACKEND_API_HOST:-hahadeng.cn}
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-8090}:8080"
