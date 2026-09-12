@@ -29,9 +29,9 @@ describe('frontend server deployment configuration', () => {
     expect(nginxConfig).toContain('proxy_request_buffering off;');
   });
 
-  it('exposes the frontend on port 8080 and passes the backend host at build time', () => {
+  it('exposes the frontend on host port 8090 and passes the backend host at build time', () => {
     expect(compose).toContain('dockerfile: scripts/deploy/Dockerfile');
     expect(compose).toContain('BACKEND_API_HOST: ${BACKEND_API_HOST:-hahadeng.cn}');
-    expect(compose).toContain('"${FRONTEND_PORT:-8080}:8080"');
+    expect(compose).toContain('"${FRONTEND_PORT:-8090}:8080"');
   });
 });

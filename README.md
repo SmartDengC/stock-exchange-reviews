@@ -105,7 +105,7 @@ pnpm run check
 cd deploy/tencent
 cp .env.example .env
 export BACKEND_API_HOST=hahadeng.cn
-export FRONTEND_PORT=8080
+export FRONTEND_PORT=8090
 
 docker compose -f compose.frontend.yaml config
 docker compose -f compose.frontend.yaml build
@@ -116,8 +116,8 @@ docker compose -f compose.frontend.yaml ps
 验证静态页面和同源 API 代理：
 
 ```bash
-curl -I http://前端服务器IP:8080
-curl -i http://前端服务器IP:8080/api/health/live
+curl -I http://前端服务器IP:8090
+curl -i http://前端服务器IP:8090/api/health/live
 ```
 
 前端镜像构建时会把 `BACKEND_API_HOST` 注入 Nginx。普通 API 请求读取超时为 120 秒，附件上传、附件下载和 Excel 导出为 300 秒。
@@ -127,8 +127,8 @@ curl -i http://前端服务器IP:8080/api/health/live
 在 `trading-cloud/deploy/aliyun/.env` 中填写前端服务器的实际公开地址：
 
 ```dotenv
-TRADING_FRONTEND_ORIGINS=http://前端服务器IP:8080
-TRADING_PUBLIC_BASE_URL=http://前端服务器IP:8080
+TRADING_FRONTEND_ORIGINS=http://前端服务器IP:8090
+TRADING_PUBLIC_BASE_URL=http://前端服务器IP:8090
 TRADING_SESSION_COOKIE_DOMAIN=
 TRADING_SESSION_SECURE=false
 ```
