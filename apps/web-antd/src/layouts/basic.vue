@@ -41,7 +41,10 @@ function handleLogout() {
 </script>
 
 <template>
-  <BasicLayout @clear-preferences-and-logout="handleLogout">
+  <BasicLayout
+    @clear-preferences-and-logout="handleLogout"
+    @click-logo="router.push('/')"
+  >
     <template #global-search>
       <GlobalSearch :menus="accessStore.accessMenus" class="market-menu-search" />
     </template>

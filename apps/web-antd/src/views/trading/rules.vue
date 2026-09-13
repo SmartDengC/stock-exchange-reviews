@@ -3,10 +3,11 @@ import type { TradingRule, TradingRuleInput } from '#/shared/types/trading';
 
 import { computed, onMounted, reactive, ref } from 'vue';
 
-import { PlusOutlined } from '@ant-design/icons-vue';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons-vue';
 import {
   Alert,
   Button,
+  Drawer,
   Empty,
   Form,
   FormItem,
@@ -31,7 +32,6 @@ import { errorMessage } from '#/lib/trading';
 const rules = ref<TradingRule[]>([]);
 const loading = ref(true);
 const failure = ref('');
-const activeAction = ref('');
 const status = ref('');
 const statusTone = ref<'error' | 'success'>('success');
 
@@ -58,17 +58,19 @@ const filteredRules = computed(() => {
 });
 
 // 详情查看
-const detailOpen = ref(false);
-const detailRule = ref<TradingRule | null>(null);
+const detailRule = ref<null | TradingRule>(null);
 
 function openDetail(rule: TradingRule) {
   detailRule.value = rule;
-  detailOpen.value = true;
+}
+
+function closeDetail() {
+  detailRule.value = null;
 }
 
 // 新建 / 编辑
 const modalOpen = ref(false);
-const editing = ref<TradingRule | null>(null);
+const editing = ref<null | TradingRule>(null);
 const saving = ref(false);
 const form = reactive<TradingRuleInput>({
   title: '',
@@ -104,6 +106,7 @@ async function save() {
   }
   saving.value = true;
   status.value = '';
+  const editingId = editing.value?.id;
   try {
     if (editing.value) {
       await updateTradingRule(editing.value.id, {
@@ -119,36 +122,15 @@ async function save() {
     statusTone.value = 'success';
     modalOpen.value = false;
     await load();
+    if (editingId) {
+      detailRule.value = rules.value.find((rule) => rule.id === editingId) ?? null;
+    }
   } catch (error) {
     status.value = errorMessage(error);
     statusTone.value = 'error';
   } finally {
     saving.value = false;
   }
-}
-
-function toggleActive(rule: TradingRule) {
-  if (activeAction.value) return;
-  activeAction.value = rule.id;
-  updateTradingRule(rule.id, {
-    title: rule.title,
-    description: rule.description,
-    sortOrder: rule.sortOrder,
-    active: !rule.active,
-    version: rule.version,
-  })
-    .then(async () => {
-      status.value = `${rule.title}已${rule.active ? '停用' : '启用'}。`;
-      statusTone.value = 'success';
-      await load();
-    })
-    .catch((error) => {
-      status.value = errorMessage(error);
-      statusTone.value = 'error';
-    })
-    .finally(() => {
-      activeAction.value = '';
-    });
 }
 
 function remove(rule: TradingRule) {
@@ -163,6 +145,7 @@ function remove(rule: TradingRule) {
         await deleteTradingRule(rule.id, rule.version);
         status.value = '规则已删除。';
         statusTone.value = 'success';
+        if (detailRule.value?.id === rule.id) closeDetail();
         await load();
       } catch (error) {
         status.value = errorMessage(error);
@@ -245,27 +228,21 @@ onMounted(load);
         <table class="ledger-table">
           <thead>
             <tr>
-              <th>序号</th><th>标题</th><th>描述</th><th>状态</th><th>操作</th>
+              <th>序号</th><th>标题</th><th>描述</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="rule in filteredRules" :key="rule.id">
+            <tr v-for="rule in filteredRules" :key="rule.id" class="rule-row" @click="openDetail(rule)">
               <td>{{ rule.sortOrder }}</td>
               <td>
-                <strong>{{ rule.title }}</strong>
+                <button type="button" class="table-link rule-select" @click.stop="openDetail(rule)">
+                  <strong>{{ rule.title }}</strong>
+                </button>
               </td>
-              <td class="rule-desc">{{ rule.description }}</td>
-              <td>
-                <Switch
-                  :checked="rule.active"
-                  :loading="activeAction === rule.id"
-                  @change="toggleActive(rule)"
-                />
-              </td>
-              <td>
-                <Button size="small" @click="openDetail(rule)">查看</Button>
-                <Button size="small" @click="openEdit(rule)">编辑</Button>
-                <Button size="small" danger @click="remove(rule)">删除</Button>
+              <td class="rule-description-cell">
+                <button type="button" class="table-link rule-description-full" @click.stop="openDetail(rule)">
+                  {{ rule.description }}
+                </button>
               </td>
             </tr>
           </tbody>
@@ -278,22 +255,50 @@ onMounted(load);
       />
     </section>
 
-    <!-- 详情弹窗 -->
-    <Modal
-      v-model:open="detailOpen"
-      :title="detailRule?.title"
-      :footer="null"
+    <!-- 右侧详情 -->
+    <Drawer
+      :open="Boolean(detailRule)"
+      placement="right"
+      width="min(36rem, 92vw)"
+      :destroy-on-close="true"
+      class="rules-detail-drawer"
+      @close="closeDetail"
     >
-      <div v-if="detailRule">
-        <p class="rule-detail-desc">{{ detailRule.description }}</p>
-        <div class="rule-detail-meta">
-          <Tag>序号 {{ detailRule.sortOrder }}</Tag>
-          <Tag :color="detailRule.active ? 'green' : 'red'">
-            {{ detailRule.active ? '启用' : '停用' }}
-          </Tag>
+      <template v-if="detailRule" #title>
+        <div class="detail-title">
+          <span>TRADING RULE</span>
+          <strong>{{ detailRule.title }}</strong>
         </div>
+      </template>
+      <template v-if="detailRule" #extra>
+        <div class="rules-detail-actions">
+          <Button type="primary" @click="openEdit(detailRule)">
+            <EditOutlined />编辑
+          </Button>
+          <Button danger @click="remove(detailRule)">
+            <DeleteOutlined />删除
+          </Button>
+        </div>
+      </template>
+      <div v-if="detailRule" class="rule-detail">
+        <section class="market-panel rule-detail-content">
+          <div class="page-kicker">DISCIPLINE NOTE</div>
+          <p class="rule-detail-desc">{{ detailRule.description || '暂无规则描述。' }}</p>
+          <div class="rule-detail-meta">
+            <Tag>序号 {{ detailRule.sortOrder }}</Tag>
+            <Tag :color="detailRule.active ? 'green' : 'red'">
+              {{ detailRule.active ? '启用' : '停用' }}
+            </Tag>
+          </div>
+        </section>
+        <Alert
+          type="info"
+          show-icon
+          message="把纪律放在观点之前"
+          description="每笔交易前复读这条规则，确认当前决策符合自己的交易纪律。"
+        />
       </div>
-    </Modal>
+    </Drawer>
 
     <!-- 新建/编辑弹窗 -->
     <Modal
@@ -329,11 +334,32 @@ onMounted(load);
 </template>
 
 <style scoped>
-.rule-desc {
+.rule-description-cell {
   max-width: 24rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+.rule-description-full {
+  display: block;
+  max-width: 24rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  width: 100%;
+}
+.rule-select:focus-visible,
+.rule-description-full:focus-visible {
+  outline: 2px solid var(--md-accent);
+  outline-offset: 3px;
+}
+.rules-detail-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.rule-detail {
+  display: grid;
+  gap: 1rem;
+}
+.rule-detail-content {
+  margin: 0;
 }
 .rule-detail-desc {
   font-size: 0.95rem;

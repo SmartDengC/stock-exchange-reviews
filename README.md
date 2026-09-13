@@ -108,10 +108,34 @@ export BACKEND_API_HOST=hahadeng.cn
 export FRONTEND_PORT=8090
 
 docker compose -f compose.frontend.yaml config
-docker compose -f compose.frontend.yaml build
+docker compose -f compose.frontend.yaml build frontend
 docker compose -f compose.frontend.yaml up -d
 docker compose -f compose.frontend.yaml ps
 ```
+
+#### 更新前端镜像
+
+前端是静态文件，修改 Vue 代码、`apps/web-antd/.env.production` 或构建配置后，必须重新构建镜像；仅重启容器不会更新已经复制到 Nginx 镜像中的文件。服务器上同步最新代码后执行：
+
+```bash
+cd ~/github/stock-exchange-reviews
+git pull --ff-only
+
+cd deploy/tencent
+docker compose -f compose.frontend.yaml config
+docker compose -f compose.frontend.yaml build --no-cache frontend
+docker compose -f compose.frontend.yaml up -d --force-recreate frontend
+docker compose -f compose.frontend.yaml ps
+```
+
+检查镜像内的生产页面标题，确认构建阶段已经替换 Vite 环境变量：
+
+```bash
+docker compose -f compose.frontend.yaml exec frontend \
+  grep -o '<title>[^<]*</title>' /usr/share/nginx/html/index.html
+```
+
+应输出 `<title>市场日记 · 研究终端</title>`。部署后浏览器如仍显示旧页面，可执行强制刷新（`Ctrl + Shift + R`）。
 
 验证静态页面和同源 API 代理：
 
