@@ -674,8 +674,29 @@ button:active {
   max-width: 100%;
 }
 
-.research-editor-modal .ant-modal {
+.research-edit-modal .ant-modal {
   max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  padding-bottom: 0;
+}
+
+.research-edit-modal .ant-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+}
+
+.research-edit-modal .ant-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.research-edit-modal .ant-modal-footer {
+  border-top: 1px solid var(--md-border);
+  margin-top: 0;
+  padding-top: 1rem;
 }
 
 .research-editor-body {
@@ -687,6 +708,17 @@ button:active {
   display: grid;
   gap: 0.8rem;
   grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(8rem, 0.8fr);
+}
+
+.research-editor-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+}
+
+.research-editor-actions .ant-btn-dangerous {
+  margin-right: auto;
 }
 
 .memo-detail-modal .ant-modal {

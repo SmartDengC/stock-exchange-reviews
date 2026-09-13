@@ -93,6 +93,25 @@ describe('research review archive', () => {
     expect(document.body.querySelector<HTMLInputElement>('input[placeholder="例：2026 年第 33 周市场周报"]')?.value).toBe('周末前的市场观察');
   });
 
+  it('keeps editor actions in the modal footer for long review content', async () => {
+    const longReview = {
+      ...review,
+      content: `${review.content}\n\n${'长内容\n'.repeat(200)}`,
+    };
+    api.getResearchReview.mockResolvedValueOnce(longReview);
+    const { wrapper } = await mountArchive();
+
+    await wrapper.find('.archive-table tbody tr').trigger('click');
+    await flushPromises();
+    clickElement(document.body.querySelector('.ant-drawer-extra .ant-btn')!);
+    await flushPromises();
+
+    const modal = document.body.querySelector('.research-edit-modal')!;
+    expect(modal.querySelector('.ant-modal-body textarea')).not.toBeNull();
+    expect(modal.querySelector('.ant-modal-footer .ant-btn-primary')).not.toBeNull();
+    expect(modal.querySelector('.ant-modal-footer .ant-btn-dangerous')).not.toBeNull();
+  });
+
   it('saves edits in the modal and returns to the updated detail drawer', async () => {
     const { router, wrapper } = await mountArchive();
     api.saveResearchReview.mockResolvedValueOnce({ ...review, content: '# 已更新' });

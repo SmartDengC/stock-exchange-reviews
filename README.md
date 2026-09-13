@@ -127,7 +127,7 @@ curl -i http://前端服务器IP:8090/api/health/live
 在 `trading-cloud/deploy/aliyun/.env` 中填写前端服务器的实际公开地址：
 
 ```dotenv
-TRADING_FRONTEND_ORIGINS=http://前端服务器IP:8090
+TRADING_FRONTEND_ORIGINS=https://se.vdcc.cn,http://前端服务器IP:8090,http://localhost:8080
 TRADING_PUBLIC_BASE_URL=http://前端服务器IP:8090
 TRADING_SESSION_COOKIE_DOMAIN=
 TRADING_SESSION_SECURE=false
@@ -163,7 +163,7 @@ VITE_GLOB_API_URL=
 Trading Cloud 服务器使用：
 
 ```dotenv
-TRADING_FRONTEND_ORIGINS=https://se.xxxx.cn
+TRADING_FRONTEND_ORIGINS=https://se.vdcc.cn,http://前端服务器IP:8090,http://localhost:8080
 TRADING_PUBLIC_BASE_URL=https://se.xxxx.cn
 TRADING_SESSION_SECURE=true
 TRADING_SESSION_COOKIE_DOMAIN=

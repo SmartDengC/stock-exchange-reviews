@@ -330,7 +330,6 @@ onBeforeUnmount(() => refreshController?.abort());
       v-model:open="editorOpen"
       centered
       width="min(58rem, 94vw)"
-      :footer="null"
       wrap-class-name="research-edit-modal"
       @cancel="closeEditor"
     >
@@ -376,12 +375,15 @@ onBeforeUnmount(() => refreshController?.abort());
           <MarkdownDocument :markdown="editorModel.content" />
         </div>
         <p v-if="editorError" class="form-alert" role="alert">{{ editorError }}</p>
-        <div class="memo-modal-actions">
+      </div>
+
+      <template #footer>
+        <div class="research-editor-actions">
           <Button danger @click="removeReview">删除</Button>
           <Button @click="closeEditor">关闭</Button>
           <Button type="primary" :loading="editorSaving" @click="saveEditor">保存</Button>
         </div>
-      </div>
+      </template>
     </Modal>
   </PageFrame>
 </template>

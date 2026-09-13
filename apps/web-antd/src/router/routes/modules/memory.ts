@@ -5,7 +5,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         component: () => import('#/views/memory/pinned.vue'),
-        meta: { icon: 'lucide:pin', title: 'Memo 总览' },
+        meta: { icon: 'lucide:pin', title: '固定 Memo 总览' },
         name: 'MemoryPinned',
         path: '/memory/pinned',
       },

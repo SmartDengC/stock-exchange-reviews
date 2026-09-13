@@ -2,6 +2,7 @@
 import type {
   ExecutionGrade,
   TradeExecutionInput,
+  TradeExecutionView,
   TradeInput,
   TradeView,
   TradingOption,
@@ -16,13 +17,13 @@ type TradeFormModel = Omit<
   | 'emotion'
   | 'errorNotes'
   | 'executionGrade'
+  | 'executions'
   | 'exitPrice'
   | 'exitReason'
   | 'fees'
   | 'instrumentCode'
   | 'nextImprovement'
   | 'plannedRiskAmount'
-  | 'executions'
 > & {
   didWell: string;
   emotion: string;
@@ -329,12 +330,20 @@ function syncLegacyFieldsFromExecutions() {
 
 function executionPayload() {
   return executions.value.map(
-    ({ id, tradeId, createdAt, updatedAt, executedAtLocal, ...item }) => ({
-    ...item,
-    executedAt: isoDateTime(executedAtLocal) ?? '',
-    fee: item.fee || '0',
-    note: item.note || null,
-    }),
+    (draft) => {
+      const execution = draft as Partial<TradeExecutionView> & TradeExecutionDraft;
+      const { createdAt, executedAtLocal, id, tradeId, updatedAt, ...item } = execution;
+      void createdAt;
+      void id;
+      void tradeId;
+      void updatedAt;
+      return {
+        ...item,
+      executedAt: isoDateTime(executedAtLocal) ?? '',
+      fee: item.fee || '0',
+      note: item.note || null,
+      };
+    },
   );
 }
 
