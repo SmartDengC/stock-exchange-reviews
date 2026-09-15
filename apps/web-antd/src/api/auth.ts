@@ -3,6 +3,7 @@ import type {
   SessionUser,
 } from '#/shared/types/auth';
 
+import { encryptPassword, type LoginEncryptionKey } from './login-crypto';
 import { requestClient } from './request';
 
 /**
@@ -24,7 +25,17 @@ function fetchSession() {
  * @note 登录成功后返回 SessionResponse，包含用户信息
  */
 function login(credentials: { password: string; username: string }) {
-  return requestClient.post<SessionResponse>('/api/auth/login', credentials);
+  return requestClient
+    .get<LoginEncryptionKey>('/api/auth/encryption-key')
+    .then((encryptionKey) =>
+      encryptPassword(credentials.password, credentials.username, encryptionKey),
+    )
+    .then((encryptedPassword) =>
+      requestClient.post<SessionResponse>('/api/auth/login', {
+        encryptedPassword,
+        username: credentials.username,
+      }),
+    );
 }
 
 /**

@@ -3,6 +3,26 @@ import { unmountGlobalLoading } from '@vben/utils';
 
 import { overridesPreferences } from './preferences';
 
+const ASSET_RELOAD_KEY = 'market-diary:asset-reload';
+
+window.addEventListener(
+  'load',
+  () => {
+    sessionStorage.removeItem(ASSET_RELOAD_KEY);
+  },
+  { once: true },
+);
+
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  if (sessionStorage.getItem(ASSET_RELOAD_KEY) === '1') {
+    sessionStorage.removeItem(ASSET_RELOAD_KEY);
+    return;
+  }
+  sessionStorage.setItem(ASSET_RELOAD_KEY, '1');
+  window.location.reload();
+});
+
 /**
  * 应用初始化完成之后再进行页面加载渲染
  */

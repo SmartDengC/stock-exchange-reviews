@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 const root = process.cwd();
 const dockerfile = readFileSync(resolve(root, 'scripts/deploy/Dockerfile'), 'utf8');
 const nginxConfig = readFileSync(resolve(root, 'scripts/deploy/nginx.conf'), 'utf8');
+const mainEntry = readFileSync(resolve(root, 'apps/web-antd/src/main.ts'), 'utf8');
 const compose = readFileSync(resolve(root, 'deploy/tencent/compose.frontend.yaml'), 'utf8');
 
 describe('frontend server deployment configuration', () => {
@@ -35,6 +36,19 @@ describe('frontend server deployment configuration', () => {
     expect(nginxConfig).toContain('proxy_read_timeout 120s;');
     expect(nginxConfig).toContain('proxy_read_timeout 300s;');
     expect(nginxConfig).toContain('proxy_request_buffering off;');
+  });
+
+  it('keeps the entrypoint fresh and never falls back to HTML for hashed assets', () => {
+    expect(nginxConfig).toContain('location = /index.html');
+    expect(nginxConfig).toContain('Cache-Control "no-store, no-cache, must-revalidate"');
+    expect(nginxConfig).toContain('location ~* ^/(?:js|jse|css)/');
+    expect(nginxConfig).toContain('try_files $uri =404;');
+    expect(nginxConfig).toContain('Cache-Control "public, max-age=31536000, immutable"');
+  });
+
+  it('reloads once when a deployed chunk hash is stale', () => {
+    expect(mainEntry).toContain('vite:preloadError');
+    expect(mainEntry).toContain('market-diary:asset-reload');
   });
 
   it('restricts the Sina quote relay to the configured backend IP', () => {
