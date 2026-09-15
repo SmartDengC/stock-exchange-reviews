@@ -32,6 +32,8 @@ RUN echo "Builder Success 🎉"
 FROM nginx:stable-alpine AS production
 
 ARG BACKEND_API_HOST=hahadeng.cn
+ARG SINA_RELAY_ALLOW_IP=127.0.0.1
+ARG SINA_RELAY_PORT=8091
 
 # 配置 nginx
 RUN echo "types { application/javascript js mjs; }" > /etc/nginx/conf.d/mjs.conf \
@@ -43,9 +45,11 @@ COPY --from=builder /app/apps/web-antd/dist /usr/share/nginx/html
 # 复制 nginx 配置
 COPY --from=builder /app/scripts/deploy/nginx.conf /etc/nginx/nginx.conf
 RUN test -n "$BACKEND_API_HOST" \
-    && sed -i "s/__BACKEND_API_HOST__/${BACKEND_API_HOST}/g" /etc/nginx/nginx.conf
+    && test -n "$SINA_RELAY_ALLOW_IP" \
+    && test -n "$SINA_RELAY_PORT" \
+    && sed -i "s/__BACKEND_API_HOST__/${BACKEND_API_HOST}/g; s/__SINA_RELAY_ALLOW_IP__/${SINA_RELAY_ALLOW_IP}/g" /etc/nginx/nginx.conf
 
-EXPOSE 8080
+EXPOSE 8080 8081
 
 # 启动 nginx
 CMD ["nginx", "-g", "daemon off;"]

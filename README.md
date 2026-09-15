@@ -106,6 +106,8 @@ cd deploy/tencent
 cp .env.example .env
 export BACKEND_API_HOST=hahadeng.cn
 export FRONTEND_PORT=8090
+export SINA_RELAY_PORT=8091
+export SINA_RELAY_ALLOW_IP=8.137.124.148
 
 docker compose -f compose.frontend.yaml config
 docker compose -f compose.frontend.yaml build frontend
@@ -143,6 +145,14 @@ docker compose -f compose.frontend.yaml exec frontend \
 curl -I http://前端服务器IP:8090
 curl -i http://前端服务器IP:8090/api/health/live
 ```
+
+行情中继监听前端服务器的 `8091` 端口，仅允许阿里云 API 出口 IP `8.137.124.148` 访问。腾讯云安全组也必须只对该 `/32` 地址放行 TCP 8091；从阿里云验证：
+
+```bash
+curl -i http://前端服务器IP:8091/sina-quotes/sh000001
+```
+
+Trading Cloud 后端通过 `TRADING_SINA_QUOTES_URL=http://前端服务器IP:8091/sina-quotes/{symbols}` 使用该中继。
 
 前端镜像构建时会把 `BACKEND_API_HOST` 注入 Nginx。普通 API 请求读取超时为 120 秒，附件上传、附件下载和 Excel 导出为 300 秒。
 

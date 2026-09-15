@@ -8,10 +8,13 @@ services:
       dockerfile: scripts/deploy/Dockerfile
       args:
         BACKEND_API_HOST: ${BACKEND_API_HOST:-hahadeng.cn}
+        SINA_RELAY_ALLOW_IP: ${SINA_RELAY_ALLOW_IP:-127.0.0.1}
+        SINA_RELAY_PORT: ${SINA_RELAY_PORT:-8091}
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-8090}:8080"
+      - "${SINA_RELAY_PORT:-8091}:8081"
     mem_limit: 512m
     cpus: 1
     healthcheck:

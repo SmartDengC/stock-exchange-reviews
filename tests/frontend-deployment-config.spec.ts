@@ -19,6 +19,10 @@ describe('frontend server deployment configuration', () => {
       'COPY --from=builder /app/apps/web-antd/dist /usr/share/nginx/html',
     );
     expect(dockerfile).not.toContain('/app/playground/dist');
+    expect(dockerfile).toContain('ARG SINA_RELAY_ALLOW_IP=127.0.0.1');
+    expect(dockerfile).toContain('ARG SINA_RELAY_PORT=8091');
+    expect(dockerfile).toContain('__SINA_RELAY_ALLOW_IP__');
+    expect(dockerfile).toContain('EXPOSE 8080 8081');
   });
 
   it('proxies API requests to the configurable HTTPS backend', () => {
@@ -33,10 +37,28 @@ describe('frontend server deployment configuration', () => {
     expect(nginxConfig).toContain('proxy_request_buffering off;');
   });
 
+  it('restricts the Sina quote relay to the configured backend IP', () => {
+    expect(nginxConfig).toContain('listen 8081;');
+    expect(nginxConfig).toContain('location ~ ^/sina-quotes/');
+    expect(nginxConfig).toContain('allow __SINA_RELAY_ALLOW_IP__;');
+    expect(nginxConfig).toContain('deny all;');
+    expect(nginxConfig).toContain('if ($args != "") { return 404; }');
+    expect(nginxConfig).toContain('resolver 127.0.0.11 valid=300s ipv6=off;');
+    expect(nginxConfig).toContain('proxy_ssl_server_name on;');
+    expect(nginxConfig).toContain('proxy_ssl_name hq.sinajs.cn;');
+    expect(nginxConfig).toContain('proxy_pass_request_headers off;');
+    expect(nginxConfig).toContain('proxy_set_header Referer https://finance.sina.com.cn/;');
+    expect(nginxConfig).toContain('proxy_set_header User-Agent market-diary/1.0;');
+    expect(nginxConfig).toContain('proxy_read_timeout 5s;');
+  });
+
   it('exposes the frontend on host port 8090 and passes the backend host at build time', () => {
     expect(compose).toContain('dockerfile: scripts/deploy/Dockerfile');
     expect(compose).toContain('BACKEND_API_HOST: ${BACKEND_API_HOST:-hahadeng.cn}');
     expect(compose).toContain('NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}');
     expect(compose).toContain('"${FRONTEND_PORT:-8090}:8080"');
+    expect(compose).toContain('SINA_RELAY_ALLOW_IP: ${SINA_RELAY_ALLOW_IP:-127.0.0.1}');
+    expect(compose).toContain('SINA_RELAY_PORT: ${SINA_RELAY_PORT:-8091}');
+    expect(compose).toContain('"${SINA_RELAY_PORT:-8091}:8081"');
   });
 });
