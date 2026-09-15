@@ -256,11 +256,13 @@ function exportUrl(filters: TradeListFilters = {}) {
 
 /**
  * 获取交易规则列表
+ * @param query 规则标题、描述或评论关键字
  * @param signal AbortSignal，用于取消请求
  * @returns 交易规则列表
  */
-function listTradingRules(signal?: AbortSignal) {
+function listTradingRules(query = '', signal?: AbortSignal) {
   return requestClient.get<TradingRule[]>('/api/trading/rules', {
+    params: { q: query || undefined },
     ...(signal ? { signal } : {}),
   });
 }
@@ -281,10 +283,7 @@ function createTradingRule(input: TradingRuleInput) {
  * @returns 更新后的规则对象
  */
 function updateTradingRule(id: string, input: TradingRuleInput) {
-  return requestClient.request<TradingRule>(
-    `/api/trading/rules/${id}`,
-    { data: input, method: 'PATCH' },
-  );
+  return requestClient.put<TradingRule>(`/api/trading/rules/${id}`, input);
 }
 
 /**

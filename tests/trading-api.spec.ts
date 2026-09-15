@@ -27,6 +27,34 @@ describe('trading API adapter', () => {
     });
   });
 
+  it('passes trading rule search keywords as q and updates rules with PUT', async () => {
+    requestClient.get.mockResolvedValue([]);
+    requestClient.put.mockResolvedValue({});
+    const { listTradingRules, updateTradingRule } = await import('#/api/trading');
+
+    await listTradingRules('纪律');
+    await updateTradingRule('rule-1', {
+      active: true,
+      comment: '复盘提醒',
+      description: '说明',
+      sortOrder: 1,
+      title: '规则',
+      version: 2,
+    });
+
+    expect(requestClient.get).toHaveBeenCalledWith('/api/trading/rules', {
+      params: { q: '纪律' },
+    });
+    expect(requestClient.put).toHaveBeenCalledWith('/api/trading/rules/rule-1', {
+      active: true,
+      comment: '复盘提醒',
+      description: '说明',
+      sortOrder: 1,
+      title: '规则',
+      version: 2,
+    });
+  });
+
   it('passes cancellation signals to list and dashboard queries', async () => {
     requestClient.get.mockResolvedValue({});
     const { getTradingDashboard, listTrades } = await import('#/api/trading');

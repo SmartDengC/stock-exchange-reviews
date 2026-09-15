@@ -17,6 +17,7 @@ const sampleRule = {
   id: 'rule-1',
   title: '不教人投资',
   description: '不主动给他人投资建议，分享经验但不代做决策。',
+  comment: '今天复盘时重点提醒自己不要替别人做决定。',
   sortOrder: 1,
   active: true,
   version: 2,
@@ -38,6 +39,8 @@ describe('trading rules page', () => {
     expect(wrapper.find('thead').text()).not.toContain('状态');
     expect(wrapper.find('.ledger-table .ant-switch').exists()).toBe(false);
     expect(wrapper.find('.rule-description-full').text()).toBe(sampleRule.description);
+    expect(wrapper.find('thead').text()).toContain('评论');
+    expect(wrapper.find('.rule-comment-cell').text()).toContain(sampleRule.comment);
     expect(wrapper.find('tbody').text()).not.toContain('编辑');
     expect(wrapper.find('tbody').text()).not.toContain('删除');
 
@@ -48,8 +51,58 @@ describe('trading rules page', () => {
     expect(drawer).not.toBeNull();
     expect(drawer?.textContent).toContain('不教人投资');
     expect(drawer?.textContent).toContain('不主动给他人投资建议，分享经验但不代做决策。');
+    expect(drawer?.textContent).toContain(sampleRule.comment);
     expect(drawer?.querySelector('.rules-detail-actions')?.textContent).toContain('编辑');
     expect(drawer?.querySelector('.rules-detail-actions')?.textContent).toContain('删除');
+    wrapper.unmount();
+  });
+
+  it('only queries after clicking the query button or pressing enter', async () => {
+    const wrapper = mount(rulesView, { attachTo: document.body });
+    await flushPromises();
+
+    expect(api.listTradingRules).toHaveBeenCalledTimes(1);
+    const input = wrapper.get('input[aria-label="搜索标题、描述或评论"]');
+    await input.setValue('  投资  ');
+    await flushPromises();
+    expect(api.listTradingRules).toHaveBeenCalledTimes(1);
+
+    await wrapper.get('.ledger-filters .ant-btn').trigger('click');
+    await flushPromises();
+    expect(api.listTradingRules).toHaveBeenLastCalledWith('投资');
+
+    await input.setValue('复盘');
+    await input.trigger('keydown.enter');
+    await flushPromises();
+    expect(api.listTradingRules).toHaveBeenLastCalledWith('复盘');
+    expect(api.listTradingRules).toHaveBeenCalledTimes(3);
+    wrapper.unmount();
+  });
+
+  it('includes comment in create and edit forms', async () => {
+    api.createTradingRule.mockResolvedValue(sampleRule);
+    const wrapper = mount(rulesView, { attachTo: document.body });
+    await flushPromises();
+
+    await wrapper.get('.page-actions .ant-btn-primary').trigger('click');
+    await flushPromises();
+    expect(document.body.textContent).toContain('评论');
+
+    const titleInput = document.body.querySelector('.ant-modal input') as HTMLInputElement;
+    titleInput.value = '新规则';
+    titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const textareas = document.body.querySelectorAll('.ant-modal textarea');
+    expect(textareas.length).toBeGreaterThan(0);
+    const commentTextarea = textareas[textareas.length - 1] as HTMLTextAreaElement;
+    commentTextarea.value = '新的评论';
+    commentTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    const modalOk = document.body.querySelector('.ant-modal .ant-btn-primary');
+    modalOk?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    await flushPromises();
+
+    expect(api.createTradingRule).toHaveBeenCalledWith(
+      expect.objectContaining({ comment: '新的评论' }),
+    );
     wrapper.unmount();
   });
 
@@ -65,9 +118,13 @@ describe('trading rules page', () => {
     await flushPromises();
 
     expect(document.body.querySelector('.ant-modal-title')?.textContent).toBe('编辑规则');
+    expect(document.body.querySelector('.rules-detail-drawer .rule-detail')).toBeNull();
+    expect(document.body.querySelector('.rules-detail-actions')).toBeNull();
     expect(document.body.querySelector('.ant-modal input')?.getAttribute('value')).toBe(
       '不教人投资',
     );
+    const textareas = document.body.querySelectorAll('.ant-modal textarea');
+    expect((textareas[textareas.length - 1] as HTMLTextAreaElement)?.value).toBe(sampleRule.comment);
     wrapper.unmount();
   });
 });

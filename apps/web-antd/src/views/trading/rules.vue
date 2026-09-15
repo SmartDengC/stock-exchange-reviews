@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { TradingRule, TradingRuleInput } from '#/shared/types/trading';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons-vue';
 import {
@@ -14,7 +14,6 @@ import {
   Input,
   InputNumber,
   Modal,
-  Select,
   Skeleton,
   Switch,
   Tag,
@@ -36,26 +35,8 @@ const status = ref('');
 const statusTone = ref<'error' | 'success'>('success');
 
 // 筛选
-const query = ref('');
-const statusFilter = ref<'' | 'active' | 'inactive'>('');
-
-const filteredRules = computed(() => {
-  let items = rules.value;
-  if (query.value) {
-    const q = query.value.toLowerCase();
-    items = items.filter(
-      (item) =>
-        item.title.toLowerCase().includes(q) ||
-        item.description.toLowerCase().includes(q),
-    );
-  }
-  if (statusFilter.value === 'active') {
-    items = items.filter((item) => item.active);
-  } else if (statusFilter.value === 'inactive') {
-    items = items.filter((item) => !item.active);
-  }
-  return items;
-});
+const searchInput = ref('');
+const appliedQuery = ref('');
 
 // 详情查看
 const detailRule = ref<null | TradingRule>(null);
@@ -75,6 +56,7 @@ const saving = ref(false);
 const form = reactive<TradingRuleInput>({
   title: '',
   description: '',
+  comment: '',
   sortOrder: 0,
   active: true,
 });
@@ -83,15 +65,18 @@ function openCreate() {
   editing.value = null;
   form.title = '';
   form.description = '';
+  form.comment = '';
   form.sortOrder = rules.value.length + 1;
   form.active = true;
   modalOpen.value = true;
 }
 
 function openEdit(rule: TradingRule) {
+  closeDetail();
   editing.value = rule;
   form.title = rule.title;
   form.description = rule.description;
+  form.comment = rule.comment;
   form.sortOrder = rule.sortOrder;
   form.active = rule.active;
   modalOpen.value = true;
@@ -121,7 +106,7 @@ async function save() {
     }
     statusTone.value = 'success';
     modalOpen.value = false;
-    await load();
+    await load(appliedQuery.value);
     if (editingId) {
       detailRule.value = rules.value.find((rule) => rule.id === editingId) ?? null;
     }
@@ -146,7 +131,7 @@ function remove(rule: TradingRule) {
         status.value = '规则已删除。';
         statusTone.value = 'success';
         if (detailRule.value?.id === rule.id) closeDetail();
-        await load();
+        await load(appliedQuery.value);
       } catch (error) {
         status.value = errorMessage(error);
         statusTone.value = 'error';
@@ -155,16 +140,16 @@ function remove(rule: TradingRule) {
   });
 }
 
-function clearFilters() {
-  query.value = '';
-  statusFilter.value = '';
+async function applyQuery() {
+  appliedQuery.value = searchInput.value.trim();
+  await load(appliedQuery.value);
 }
 
-async function load() {
+async function load(query = appliedQuery.value) {
   loading.value = true;
   failure.value = '';
   try {
-    rules.value = await listTradingRules();
+    rules.value = await listTradingRules(query);
   } catch (error) {
     failure.value = errorMessage(error);
   } finally {
@@ -195,20 +180,13 @@ onMounted(load);
 
     <section class="market-panel ledger-filters">
       <Input
-        v-model:value="query"
+        v-model:value="searchInput"
         allow-clear
-        placeholder="搜索标题或描述"
-        aria-label="搜索标题或描述"
+        placeholder="搜索标题、描述或评论"
+        aria-label="搜索标题、描述或评论"
+        @press-enter="applyQuery"
       />
-      <Select
-        v-model:value="statusFilter"
-        :options="[
-          { label: '全部状态', value: '' },
-          { label: '启用', value: 'active' },
-          { label: '停用', value: 'inactive' },
-        ]"
-      />
-      <Button v-if="query || statusFilter" @click="clearFilters">清除筛选</Button>
+      <Button type="primary" :loading="loading" @click="applyQuery">查询</Button>
     </section>
 
     <Skeleton v-if="loading" active :paragraph="{ rows: 8 }" />
@@ -218,21 +196,21 @@ onMounted(load);
       show-icon
       :message="failure"
     >
-      <template #extra><Button @click="load">重试</Button></template>
+      <template #extra><Button @click="load()">重试</Button></template>
     </Alert>
     <section v-else class="market-panel ledger-panel">
       <div class="ledger-summary">
-        <strong>{{ filteredRules.length }}</strong><span>条规则</span>
+        <strong>{{ rules.length }}</strong><span>条规则</span>
       </div>
       <div class="ledger-table-wrap">
         <table class="ledger-table">
           <thead>
             <tr>
-              <th>序号</th><th>标题</th><th>描述</th>
+              <th>序号</th><th>标题</th><th>描述</th><th>评论</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="rule in filteredRules" :key="rule.id" class="rule-row" @click="openDetail(rule)">
+            <tr v-for="rule in rules" :key="rule.id" class="rule-row" @click="openDetail(rule)">
               <td>{{ rule.sortOrder }}</td>
               <td>
                 <button type="button" class="table-link rule-select" @click.stop="openDetail(rule)">
@@ -244,12 +222,17 @@ onMounted(load);
                   {{ rule.description }}
                 </button>
               </td>
+              <td class="rule-comment-cell">
+                <button type="button" class="table-link rule-comment-full" @click.stop="openDetail(rule)">
+                  {{ rule.comment || '—' }}
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
       <Empty
-        v-if="filteredRules.length === 0"
+        v-if="rules.length === 0"
         description="没有匹配的交易规则"
         :image="Empty.PRESENTED_IMAGE_SIMPLE"
       />
@@ -284,6 +267,8 @@ onMounted(load);
         <section class="market-panel rule-detail-content">
           <div class="page-kicker">DISCIPLINE NOTE</div>
           <p class="rule-detail-desc">{{ detailRule.description || '暂无规则描述。' }}</p>
+          <div class="page-kicker rule-detail-comment-label">COMMENT</div>
+          <p class="rule-detail-comment">{{ detailRule.comment || '暂无评论。' }}</p>
           <div class="rule-detail-meta">
             <Tag>序号 {{ detailRule.sortOrder }}</Tag>
             <Tag :color="detailRule.active ? 'green' : 'red'">
@@ -322,6 +307,13 @@ onMounted(load);
             placeholder="规则的详细说明"
           />
         </FormItem>
+        <FormItem label="评论">
+          <Input.TextArea
+            v-model:value="form.comment"
+            :rows="3"
+            placeholder="补充这条规则的复盘评论"
+          />
+        </FormItem>
         <FormItem label="排序">
           <InputNumber v-model:value="form.sortOrder" :min="0" style="width: 100%;" />
         </FormItem>
@@ -345,6 +337,21 @@ onMounted(load);
   white-space: normal;
   width: 100%;
 }
+.rule-comment-cell {
+  max-width: 18rem;
+}
+.rule-comment-full {
+  display: -webkit-box;
+  max-width: 18rem;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: left;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  width: 100%;
+}
 .rule-select:focus-visible,
 .rule-description-full:focus-visible {
   outline: 2px solid var(--md-accent);
@@ -365,6 +372,15 @@ onMounted(load);
   font-size: 0.95rem;
   line-height: 1.7;
   margin-bottom: 1rem;
+}
+.rule-detail-comment-label {
+  margin-top: 1rem;
+}
+.rule-detail-comment {
+  line-height: 1.7;
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 .rule-detail-meta {
   display: flex;

@@ -154,6 +154,7 @@ export type TradingOption = {
 
 export type TradingRule = {
   active: boolean;
+  comment: string;
   createdAt: string;
   description: string;
   id: string;
@@ -165,6 +166,7 @@ export type TradingRule = {
 
 export type TradingRuleInput = {
   active: boolean;
+  comment: string;
   description: string;
   sortOrder: number;
   title: string;
