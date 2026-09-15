@@ -94,14 +94,57 @@ pnpm install
 
 这两个失败不发生在 pnpm/Corepack 启动阶段，也不是本次工具链修复引入的修改，需单独排查。
 
-## 4. 生产构建阶段的 `sass-embedded` EPIPE
+## 4. `sass-embedded` 导致 Vite 开发服务和生产构建 EPIPE
 
-执行 `pnpm run build` 时，Vite 在 Sass 编译阶段报错：
+### 现象
+
+执行 `pnpm run dev` 或 `pnpm run build` 时，Vite 在首次 Sass 编译阶段退出：
 
 ```text
 Error: write EPIPE
     at .../sass-embedded/.../AsyncCompiler.writeStdin
 ```
 
-该错误发生在依赖安装成功之后的 Sass 子进程通信阶段，与最初的 Corepack 动态 import 错误不同，需作为独立的构建问题排查。
+### 排查过程
 
+1. 机器是 Intel `x86_64`，安装的也是 `sass-embedded-darwin-x64`，排除了 CPU 架构不匹配。
+2. 直接运行 `sass-embedded@1.99.0` 内置的 Sass 可执行文件，得到真正的底层错误：
+
+   ```text
+   VM initialization failed: Current Mac OS X version 12.0 is lower than minimum supported version 14.0
+   ```
+
+3. Vite 只看到 Sass 子进程提前关闭，继续向已关闭的 stdin 管道写入时才报 `EPIPE`，因此 `EPIPE` 是次级症状。
+4. 通过在临时目录分别运行官方二进制确认版本边界：
+   - `sass-embedded@1.98.0`：失败，要求 macOS 14。
+   - `sass-embedded@1.97.3`：成功，支持当前 macOS 12。
+
+### 根因
+
+`sass-embedded@1.98.0` 及以上版本携带的 Dart Sass 运行时不再支持 macOS 12。项目 catalog 使用 `^1.99.0`，因此依赖安装到了无法在当前系统上启动的 `1.99.0`。
+
+### 解决方式
+
+在 `pnpm-workspace.yaml` 中将 `sass-embedded` 精确固定为 `1.97.3`，并通过已有的 `overrides` 机制要求所有 workspace 和 Vite peer 依赖使用同一版本：
+
+```yaml
+overrides:
+  sass-embedded: 'catalog:'
+
+catalog:
+  sass-embedded: 1.97.3
+```
+
+然后更新锁文件：
+
+```bash
+pnpm install
+```
+
+验证结果：
+
+- Vite 实际解析到 `sass-embedded@1.97.3`。
+- `pnpm run build` 成功，7203 个模块完成转换。
+- `pnpm run dev` 完成 dependency optimizer，首页返回 `200 OK`，不再出现 `EPIPE`。
+
+长期也可以通过将 macOS 升级到 14 或将工程改为使用纯 JavaScript `sass` 实现来解除版本固定；本次采用了改动最小的依赖回退方案。
