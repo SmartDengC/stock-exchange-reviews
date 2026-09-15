@@ -27,31 +27,44 @@ describe('trading API adapter', () => {
     });
   });
 
-  it('passes trading rule search keywords as q and updates rules with PUT', async () => {
+  it('passes trading rule search keywords and type filters to the API', async () => {
     requestClient.get.mockResolvedValue([]);
     requestClient.put.mockResolvedValue({});
     const { listTradingRules, updateTradingRule } = await import('#/api/trading');
 
-    await listTradingRules('纪律');
+    await listTradingRules('纪律', '趋势方向');
     await updateTradingRule('rule-1', {
       active: true,
       comment: '复盘提醒',
       description: '说明',
+      ruleType: '趋势方向',
       sortOrder: 1,
       title: '规则',
       version: 2,
     });
 
     expect(requestClient.get).toHaveBeenCalledWith('/api/trading/rules', {
-      params: { q: '纪律' },
+      params: { q: '纪律', rule_type: '趋势方向' },
     });
     expect(requestClient.put).toHaveBeenCalledWith('/api/trading/rules/rule-1', {
       active: true,
       comment: '复盘提醒',
       description: '说明',
+      ruleType: '趋势方向',
       sortOrder: 1,
       title: '规则',
       version: 2,
+    });
+  });
+
+  it('omits empty trading rule filters', async () => {
+    requestClient.get.mockResolvedValue([]);
+    const { listTradingRules } = await import('#/api/trading');
+
+    await listTradingRules('', '');
+
+    expect(requestClient.get).toHaveBeenCalledWith('/api/trading/rules', {
+      params: { q: undefined, rule_type: undefined },
     });
   });
 

@@ -1,5 +1,9 @@
 <script lang="ts" setup>
-import type { TradingRule, TradingRuleInput } from '#/shared/types/trading';
+import type {
+  TradingRule,
+  TradingRuleInput,
+  TradingRuleType,
+} from '#/shared/types/trading';
 
 import { onMounted, reactive, ref } from 'vue';
 
@@ -14,6 +18,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Select,
   Skeleton,
   Switch,
   Tag,
@@ -34,9 +39,22 @@ const failure = ref('');
 const status = ref('');
 const statusTone = ref<'error' | 'success'>('success');
 
+const ruleTypeOptions: Array<{ label: TradingRuleType; value: TradingRuleType }> = [
+  { label: '蜡烛图技术', value: '蜡烛图技术' },
+  { label: '趋势方向', value: '趋势方向' },
+  { label: '趋势阶段', value: '趋势阶段' },
+  { label: '趋势持续与反转', value: '趋势持续与反转' },
+  { label: '市场分析视角与趋势', value: '市场分析视角与趋势' },
+  { label: '趋势分析模型', value: '趋势分析模型' },
+  { label: '交易规则', value: '交易规则' },
+];
+const ruleTypeFilterOptions = [{ label: '全部类型', value: '' }, ...ruleTypeOptions];
+
 // 筛选
 const searchInput = ref('');
+const ruleTypeFilter = ref<'' | TradingRuleType>('');
 const appliedQuery = ref('');
+const appliedRuleType = ref<'' | TradingRuleType>('');
 
 // 详情查看
 const detailRule = ref<null | TradingRule>(null);
@@ -53,10 +71,12 @@ function closeDetail() {
 const modalOpen = ref(false);
 const editing = ref<null | TradingRule>(null);
 const saving = ref(false);
-const form = reactive<TradingRuleInput>({
+type RuleForm = Omit<TradingRuleInput, 'ruleType'> & { ruleType: '' | TradingRuleType };
+const form = reactive<RuleForm>({
   title: '',
   description: '',
   comment: '',
+  ruleType: '交易规则',
   sortOrder: 0,
   active: true,
 });
@@ -66,6 +86,7 @@ function openCreate() {
   form.title = '';
   form.description = '';
   form.comment = '';
+  form.ruleType = '交易规则';
   form.sortOrder = rules.value.length + 1;
   form.active = true;
   modalOpen.value = true;
@@ -77,6 +98,7 @@ function openEdit(rule: TradingRule) {
   form.title = rule.title;
   form.description = rule.description;
   form.comment = rule.comment;
+  form.ruleType = rule.ruleType ?? '';
   form.sortOrder = rule.sortOrder;
   form.active = rule.active;
   modalOpen.value = true;
@@ -89,6 +111,12 @@ async function save() {
     statusTone.value = 'error';
     return;
   }
+  const ruleType = form.ruleType;
+  if (!ruleType) {
+    status.value = '请选择规则类型。';
+    statusTone.value = 'error';
+    return;
+  }
   saving.value = true;
   status.value = '';
   const editingId = editing.value?.id;
@@ -96,17 +124,18 @@ async function save() {
     if (editing.value) {
       await updateTradingRule(editing.value.id, {
         ...form,
+        ruleType,
         title,
         version: editing.value.version,
       });
       status.value = '规则已更新。';
     } else {
-      await createTradingRule({ ...form, title });
+      await createTradingRule({ ...form, ruleType, title });
       status.value = '规则已新增。';
     }
     statusTone.value = 'success';
     modalOpen.value = false;
-    await load(appliedQuery.value);
+    await load(appliedQuery.value, appliedRuleType.value);
     if (editingId) {
       detailRule.value = rules.value.find((rule) => rule.id === editingId) ?? null;
     }
@@ -131,7 +160,7 @@ function remove(rule: TradingRule) {
         status.value = '规则已删除。';
         statusTone.value = 'success';
         if (detailRule.value?.id === rule.id) closeDetail();
-        await load(appliedQuery.value);
+        await load(appliedQuery.value, appliedRuleType.value);
       } catch (error) {
         status.value = errorMessage(error);
         statusTone.value = 'error';
@@ -142,14 +171,18 @@ function remove(rule: TradingRule) {
 
 async function applyQuery() {
   appliedQuery.value = searchInput.value.trim();
-  await load(appliedQuery.value);
+  appliedRuleType.value = ruleTypeFilter.value;
+  await load(appliedQuery.value, appliedRuleType.value);
 }
 
-async function load(query = appliedQuery.value) {
+async function load(
+  query = appliedQuery.value,
+  ruleType = appliedRuleType.value,
+) {
   loading.value = true;
   failure.value = '';
   try {
-    rules.value = await listTradingRules(query);
+    rules.value = await listTradingRules(query, ruleType);
   } catch (error) {
     failure.value = errorMessage(error);
   } finally {
@@ -186,6 +219,11 @@ onMounted(load);
         aria-label="搜索标题、描述或评论"
         @press-enter="applyQuery"
       />
+      <Select
+        v-model:value="ruleTypeFilter"
+        aria-label="按规则类型筛选"
+        :options="ruleTypeFilterOptions"
+      />
       <Button type="primary" :loading="loading" @click="applyQuery">查询</Button>
     </section>
 
@@ -206,12 +244,13 @@ onMounted(load);
         <table class="ledger-table">
           <thead>
             <tr>
-              <th>序号</th><th>标题</th><th>描述</th><th>评论</th>
+              <th>序号</th><th>规则类型</th><th>标题</th><th>描述</th><th>评论</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="rule in rules" :key="rule.id" class="rule-row" @click="openDetail(rule)">
               <td>{{ rule.sortOrder }}</td>
+              <td>{{ rule.ruleType || '未分类' }}</td>
               <td>
                 <button type="button" class="table-link rule-select" @click.stop="openDetail(rule)">
                   <strong>{{ rule.title }}</strong>
@@ -293,6 +332,14 @@ onMounted(load);
       @ok="save"
     >
       <Form layout="vertical">
+        <FormItem label="规则类型" required>
+          <Select
+            v-model:value="form.ruleType"
+            allow-clear
+            placeholder="请选择规则类型"
+            :options="ruleTypeOptions"
+          />
+        </FormItem>
         <FormItem label="标题">
           <Input
             v-model:value="form.title"

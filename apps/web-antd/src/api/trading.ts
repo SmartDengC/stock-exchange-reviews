@@ -11,6 +11,7 @@ import type {
   TradingOptionsResponse,
   TradingRule,
   TradingRuleInput,
+  TradingRuleType,
 } from '#/shared/types/trading';
 
 import { apiUrl, requestClient } from './request';
@@ -257,12 +258,17 @@ function exportUrl(filters: TradeListFilters = {}) {
 /**
  * 获取交易规则列表
  * @param query 规则标题、描述或评论关键字
+ * @param ruleType 规则类型筛选
  * @param signal AbortSignal，用于取消请求
  * @returns 交易规则列表
  */
-function listTradingRules(query = '', signal?: AbortSignal) {
+function listTradingRules(
+  query = '',
+  ruleType: '' | TradingRuleType = '',
+  signal?: AbortSignal,
+) {
   return requestClient.get<TradingRule[]>('/api/trading/rules', {
-    params: { q: query || undefined },
+    params: { q: query || undefined, rule_type: ruleType || undefined },
     ...(signal ? { signal } : {}),
   });
 }

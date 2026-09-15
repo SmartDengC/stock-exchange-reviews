@@ -152,12 +152,22 @@ export type TradingOption = {
   sortOrder: number;
 };
 
+export type TradingRuleType =
+  | '交易规则'
+  | '市场分析视角与趋势'
+  | '蜡烛图技术'
+  | '趋势分析模型'
+  | '趋势持续与反转'
+  | '趋势方向'
+  | '趋势阶段';
+
 export type TradingRule = {
   active: boolean;
   comment: string;
   createdAt: string;
   description: string;
   id: string;
+  ruleType: null | TradingRuleType;
   sortOrder: number;
   title: string;
   updatedAt: string;
@@ -168,6 +178,7 @@ export type TradingRuleInput = {
   active: boolean;
   comment: string;
   description: string;
+  ruleType: TradingRuleType;
   sortOrder: number;
   title: string;
   version?: number;
