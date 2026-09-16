@@ -29,7 +29,14 @@ async function generateAccessible(
   // 生成路由
   const accessibleRoutes = await generateRoutes(mode, options);
 
-  const root = router.getRoutes().find((item) => item.path === '/');
+  // 子路由也可能使用绝对路径 `/`（例如 ResearchOverview）。优先选择
+  // 仍包含动态子路由的根记录，避免二次生成时误把子路由当成根路由。
+  const rootCandidates = router
+    .getRoutes()
+    .filter((item) => item.path === '/');
+  const root =
+    rootCandidates.find((item) => item.children?.length > 0) ??
+    rootCandidates[0];
 
   // 获取已有的路由名称列表
   const names = root?.children?.map((item) => item.name) ?? [];

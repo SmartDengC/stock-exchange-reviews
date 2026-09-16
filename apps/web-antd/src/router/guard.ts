@@ -27,6 +27,8 @@ const LOGIN_PATH = '/login';
 function createRouterGuard(router: Router) {
   /** 已加载的路径集合，用于控制进度条显示 */
   const loadedPaths = new Set<string>();
+  /** 防止首次登录触发的并发导航重复生成动态路由 */
+  let accessSetupPromise: null | Promise<void> = null;
 
   /**
    * 全局前置守卫
@@ -62,14 +64,21 @@ function createRouterGuard(router: Router) {
     const accessStore = useAccessStore();
     // 首次访问，生成可访问路由和菜单
     if (!accessStore.isAccessChecked) {
-      const { accessibleMenus, accessibleRoutes } = await generateAccess({
-        roles: ['user'],
-        router,
-        routes: accessRoutes,
-      });
-      accessStore.setAccessMenus(accessibleMenus);
-      accessStore.setAccessRoutes(accessibleRoutes);
-      accessStore.setIsAccessChecked(true);
+      if (!accessSetupPromise) {
+        accessSetupPromise = (async () => {
+          const { accessibleMenus, accessibleRoutes } = await generateAccess({
+            roles: ['user'],
+            router,
+            routes: accessRoutes,
+          });
+          accessStore.setAccessMenus(accessibleMenus);
+          accessStore.setAccessRoutes(accessibleRoutes);
+          accessStore.setIsAccessChecked(true);
+        })().finally(() => {
+          accessSetupPromise = null;
+        });
+      }
+      await accessSetupPromise;
       // 重新解析路由，确保动态添加的路由已生效
       return { ...router.resolve(to.fullPath), replace: true };
     }
