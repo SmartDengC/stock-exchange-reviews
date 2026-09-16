@@ -184,6 +184,14 @@ export type TradingRuleInput = {
   version?: number;
 };
 
+export type TradingRuleListResponse = {
+  page: number;
+  pageSize: number;
+  rules: TradingRule[];
+  total: number;
+  totalPages: number;
+};
+
 export type TradingSettings = {
   defaultUsdtCnyRate: string;
 };

@@ -30,7 +30,7 @@ describe('trading rules page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
-    api.listTradingRules.mockResolvedValue([sampleRule]);
+    api.listTradingRules.mockResolvedValue({ rules: [sampleRule], page: 1, pageSize: 10, total: 1, totalPages: 1 });
   });
 
   it('opens the selected rule in a right drawer with actions moved out of the table', async () => {
@@ -74,12 +74,12 @@ describe('trading rules page', () => {
 
     await wrapper.get('.ledger-filters .ant-btn').trigger('click');
     await flushPromises();
-    expect(api.listTradingRules).toHaveBeenLastCalledWith('投资', '趋势方向');
+    expect(api.listTradingRules).toHaveBeenLastCalledWith({ query: '投资', ruleType: '趋势方向', page: 1, pageSize: 10 });
 
     await input.setValue('复盘');
     await input.trigger('keydown.enter');
     await flushPromises();
-    expect(api.listTradingRules).toHaveBeenLastCalledWith('复盘', '趋势方向');
+    expect(api.listTradingRules).toHaveBeenLastCalledWith({ query: '复盘', ruleType: '趋势方向', page: 1, pageSize: 10 });
     expect(api.listTradingRules).toHaveBeenCalledTimes(3);
     wrapper.unmount();
   });
@@ -140,7 +140,7 @@ describe('trading rules page', () => {
 
   it('shows an empty rule type as uncategorized and requires a type before saving', async () => {
     const uncategorizedRule = { ...sampleRule, ruleType: null };
-    api.listTradingRules.mockResolvedValue([uncategorizedRule]);
+    api.listTradingRules.mockResolvedValue({ rules: [uncategorizedRule], page: 1, pageSize: 10, total: 1, totalPages: 1 });
     api.updateTradingRule.mockResolvedValue(uncategorizedRule);
     const wrapper = mount(rulesView, { attachTo: document.body });
     await flushPromises();
@@ -159,6 +159,46 @@ describe('trading rules page', () => {
 
     expect(api.updateTradingRule).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain('请选择规则类型。');
+    wrapper.unmount();
+  });
+
+  it('renders paginated totals without a title column and falls back for empty titles', async () => {
+    const untitledRule = { ...sampleRule, title: '', description: '描述' };
+    api.listTradingRules.mockResolvedValue({ rules: [untitledRule], page: 1, pageSize: 10, total: 23, totalPages: 3 });
+    const wrapper = mount(rulesView, { attachTo: document.body });
+    await flushPromises();
+
+    expect(wrapper.find('.ledger-summary').text()).toContain('23');
+    expect(wrapper.find('thead').text()).not.toContain('标题');
+    await wrapper.find('.rule-row').trigger('click');
+    await flushPromises();
+    expect(document.body.querySelector('.rules-detail-drawer')?.textContent).toContain('未命名规则');
+    wrapper.unmount();
+  });
+
+  it('changes pages with the submitted filters', async () => {
+    api.listTradingRules.mockResolvedValue({ rules: [sampleRule], page: 1, pageSize: 10, total: 41, totalPages: 5 });
+    const wrapper = mount(rulesView, { attachTo: document.body });
+    await flushPromises();
+    const pagination = wrapper.findComponent({ name: 'APagination' });
+    expect(pagination.exists()).toBe(true);
+    pagination.vm.$emit('change', 2, 10);
+    await flushPromises();
+    expect(api.listTradingRules).toHaveBeenLastCalledWith({ query: '', ruleType: '', page: 2, pageSize: 10 });
+    wrapper.unmount();
+  });
+
+  it('allows an empty title when creating a rule', async () => {
+    api.createTradingRule.mockResolvedValue({ ...sampleRule, title: '' });
+    const wrapper = mount(rulesView, { attachTo: document.body });
+    await flushPromises();
+    await wrapper.get('.page-actions .ant-btn-primary').trigger('click');
+    await flushPromises();
+    document.body.querySelector('.ant-modal .ant-btn-primary')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true }),
+    );
+    await flushPromises();
+    expect(api.createTradingRule).toHaveBeenCalledWith(expect.objectContaining({ title: '' }));
     wrapper.unmount();
   });
 });

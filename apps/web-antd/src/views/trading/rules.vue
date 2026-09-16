@@ -18,6 +18,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Pagination,
   Select,
   Skeleton,
   Switch,
@@ -34,6 +35,10 @@ import PageFrame from '#/components/page-frame.vue';
 import { errorMessage } from '#/lib/trading';
 
 const rules = ref<TradingRule[]>([]);
+const total = ref(0);
+const totalPages = ref(0);
+const page = ref(1);
+const pageSize = 10;
 const loading = ref(true);
 const failure = ref('');
 const status = ref('');
@@ -87,7 +92,7 @@ function openCreate() {
   form.description = '';
   form.comment = '';
   form.ruleType = '交易规则';
-  form.sortOrder = rules.value.length + 1;
+  form.sortOrder = total.value + 1;
   form.active = true;
   modalOpen.value = true;
 }
@@ -105,12 +110,7 @@ function openEdit(rule: TradingRule) {
 }
 
 async function save() {
-  const title = form.title.trim();
-  if (!title) {
-    status.value = '请输入规则标题。';
-    statusTone.value = 'error';
-    return;
-  }
+  const title = (form.title ?? '').trim();
   const ruleType = form.ruleType;
   if (!ruleType) {
     status.value = '请选择规则类型。';
@@ -135,7 +135,7 @@ async function save() {
     }
     statusTone.value = 'success';
     modalOpen.value = false;
-    await load(appliedQuery.value, appliedRuleType.value);
+    await load(appliedQuery.value, appliedRuleType.value, page.value);
     if (editingId) {
       detailRule.value = rules.value.find((rule) => rule.id === editingId) ?? null;
     }
@@ -150,7 +150,7 @@ async function save() {
 function remove(rule: TradingRule) {
   Modal.confirm({
     title: '删除规则',
-    content: `确定删除"${rule.title}"吗？此操作不可撤销。`,
+    content: `确定删除"${rule.title || '未命名规则'}"吗？此操作不可撤销。`,
     okText: '删除',
     okType: 'danger',
     cancelText: '取消',
@@ -160,7 +160,11 @@ function remove(rule: TradingRule) {
         status.value = '规则已删除。';
         statusTone.value = 'success';
         if (detailRule.value?.id === rule.id) closeDetail();
-        await load(appliedQuery.value, appliedRuleType.value);
+        const result = await load(appliedQuery.value, appliedRuleType.value, page.value);
+        if (page.value > 1 && result && result.rules.length === 0) {
+          page.value -= 1;
+          await load(appliedQuery.value, appliedRuleType.value, page.value);
+        }
       } catch (error) {
         status.value = errorMessage(error);
         statusTone.value = 'error';
@@ -172,19 +176,37 @@ function remove(rule: TradingRule) {
 async function applyQuery() {
   appliedQuery.value = searchInput.value.trim();
   appliedRuleType.value = ruleTypeFilter.value;
-  await load(appliedQuery.value, appliedRuleType.value);
+  page.value = 1;
+  await load(appliedQuery.value, appliedRuleType.value, page.value);
+}
+
+async function changePage(nextPage: number) {
+  page.value = nextPage;
+  await load(appliedQuery.value, appliedRuleType.value, page.value);
 }
 
 async function load(
   query = appliedQuery.value,
   ruleType = appliedRuleType.value,
+  requestedPage = page.value,
 ) {
   loading.value = true;
   failure.value = '';
   try {
-    rules.value = await listTradingRules(query, ruleType);
+    const result = await listTradingRules({
+      query,
+      ruleType,
+      page: requestedPage,
+      pageSize,
+    });
+    rules.value = result.rules;
+    total.value = result.total;
+    totalPages.value = result.totalPages;
+    page.value = result.page;
+    return result;
   } catch (error) {
     failure.value = errorMessage(error);
+    return null;
   } finally {
     loading.value = false;
   }
@@ -238,26 +260,21 @@ onMounted(load);
     </Alert>
     <section v-else class="market-panel ledger-panel">
       <div class="ledger-summary">
-        <strong>{{ rules.length }}</strong><span>条规则</span>
+        <strong>{{ total }}</strong><span>条规则</span>
       </div>
       <div class="ledger-table-wrap">
         <table class="ledger-table">
           <thead>
             <tr>
-              <th>序号</th><th>规则类型</th><th>标题</th><th>描述</th><th>评论</th>
+              <th>序号</th><th>规则类型</th><th>描述</th><th>评论</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="rule in rules" :key="rule.id" class="rule-row" @click="openDetail(rule)">
               <td>{{ rule.sortOrder }}</td>
               <td>{{ rule.ruleType || '未分类' }}</td>
-              <td>
-                <button type="button" class="table-link rule-select" @click.stop="openDetail(rule)">
-                  <strong>{{ rule.title }}</strong>
-                </button>
-              </td>
               <td class="rule-description-cell">
-                <button type="button" class="table-link rule-description-full" @click.stop="openDetail(rule)">
+                <button type="button" class="table-link rule-select rule-description-full" @click.stop="openDetail(rule)">
                   {{ rule.description }}
                 </button>
               </td>
@@ -275,6 +292,14 @@ onMounted(load);
         description="没有匹配的交易规则"
         :image="Empty.PRESENTED_IMAGE_SIMPLE"
       />
+      <Pagination
+        v-if="totalPages > 1"
+        :current="page"
+        :page-size="pageSize"
+        :show-size-changer="false"
+        :total="total"
+        @change="changePage"
+      />
     </section>
 
     <!-- 右侧详情 -->
@@ -289,7 +314,7 @@ onMounted(load);
       <template v-if="detailRule" #title>
         <div class="detail-title">
           <span>TRADING RULE</span>
-          <strong>{{ detailRule.title }}</strong>
+          <strong>{{ detailRule.title || '未命名规则' }}</strong>
         </div>
       </template>
       <template v-if="detailRule" #extra>
@@ -374,11 +399,12 @@ onMounted(load);
 
 <style scoped>
 .rule-description-cell {
-  max-width: 24rem;
+  max-width: 42rem;
+  width: 50%;
 }
 .rule-description-full {
   display: block;
-  max-width: 24rem;
+  max-width: 42rem;
   line-height: 1.6;
   overflow-wrap: anywhere;
   white-space: normal;

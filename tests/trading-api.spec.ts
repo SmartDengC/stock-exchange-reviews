@@ -28,11 +28,11 @@ describe('trading API adapter', () => {
   });
 
   it('passes trading rule search keywords and type filters to the API', async () => {
-    requestClient.get.mockResolvedValue([]);
+    requestClient.get.mockResolvedValue({ rules: [], page: 2, pageSize: 10, total: 0, totalPages: 0 });
     requestClient.put.mockResolvedValue({});
     const { listTradingRules, updateTradingRule } = await import('#/api/trading');
 
-    await listTradingRules('纪律', '趋势方向');
+    await listTradingRules({ query: '纪律', ruleType: '趋势方向', page: 2, pageSize: 10 });
     await updateTradingRule('rule-1', {
       active: true,
       comment: '复盘提醒',
@@ -44,7 +44,7 @@ describe('trading API adapter', () => {
     });
 
     expect(requestClient.get).toHaveBeenCalledWith('/api/trading/rules', {
-      params: { q: '纪律', rule_type: '趋势方向' },
+      params: { q: '纪律', rule_type: '趋势方向', page: 2, pageSize: 10 },
     });
     expect(requestClient.put).toHaveBeenCalledWith('/api/trading/rules/rule-1', {
       active: true,
@@ -58,13 +58,13 @@ describe('trading API adapter', () => {
   });
 
   it('omits empty trading rule filters', async () => {
-    requestClient.get.mockResolvedValue([]);
+    requestClient.get.mockResolvedValue({ rules: [], page: 1, pageSize: 10, total: 0, totalPages: 0 });
     const { listTradingRules } = await import('#/api/trading');
 
-    await listTradingRules('', '');
+    await listTradingRules({});
 
     expect(requestClient.get).toHaveBeenCalledWith('/api/trading/rules', {
-      params: { q: undefined, rule_type: undefined },
+      params: { q: undefined, rule_type: undefined, page: 1, pageSize: 10 },
     });
   });
 
