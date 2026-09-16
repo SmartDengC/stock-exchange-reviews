@@ -6,7 +6,7 @@ import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Button, Card, Image, message, Modal, Result, Skeleton, Tag, Upload } from 'ant-design-vue';
 
-import { createMemo, deleteMemo, getMemo, updateMemo } from '#/api';
+import { createMemo, deleteMemo, getMemo, updateMemo, uploadMemoAttachments } from '#/api';
 import { apiUrl } from '#/api/request';
 import PageFrame from '#/components/page-frame.vue';
 import { errorMessage, formatTradingDateTime } from '#/lib/trading';
@@ -22,6 +22,9 @@ const saving = ref(false);
 const error = ref('');
 const initialText = ref('');
 const dirty = computed(() => model.text !== initialText.value || files.value.length > 0);
+const leaveDialogOpen = ref(false);
+const leaveDialogSaving = ref(false);
+let resolveLeave: ((allow: boolean) => void) | null = null;
 
 function formatBytes(value: number) {
   if (value < 1024) return `${value} B`;
@@ -65,11 +68,11 @@ async function load() {
   }
 }
 
-async function save() {
+async function persist(options: { redirectAfterCreate: boolean }) {
   if (model.text.trim().length === 0 && files.value.length === 0 && !memo.value?.attachments.length) {
     error.value = '正文或附件至少填写一项';
     message.error(error.value);
-    return;
+    return false;
   }
   saving.value = true;
   error.value = '';
@@ -77,25 +80,60 @@ async function save() {
     if (isNew.value) {
       const created = await createMemo(model.text, files.value);
       memo.value = created;
+      model.text = created.text;
       initialText.value = created.text;
       files.value = [];
-      await router.replace(`/memory/${created.id}`);
+      if (options.redirectAfterCreate) await router.replace(`/memory/${created.id}`);
     } else if (memo.value) {
-      const updated = await updateMemo(String(route.params.id), {
-        text: model.text,
-        version: memo.value.version,
-      });
+      let updated = memo.value;
+      if (model.text !== initialText.value) {
+        updated = await updateMemo(String(route.params.id), {
+          text: model.text,
+          version: memo.value.version,
+        });
+      }
+      if (files.value.length > 0) {
+        updated = await uploadMemoAttachments(updated.id, files.value);
+      }
       memo.value = updated;
+      model.text = updated.text;
       initialText.value = updated.text;
       files.value = [];
     }
     message.success('Memo 已保存');
+    return true;
   } catch (error_) {
     error.value = errorMessage(error_) || '保存 Memo 失败';
     message.error(error.value);
+    return false;
   } finally {
     saving.value = false;
   }
+}
+
+async function save() {
+  await persist({ redirectAfterCreate: true });
+}
+
+function requestLeaveDecision() {
+  leaveDialogOpen.value = true;
+  return new Promise<boolean>((resolve) => {
+    resolveLeave = resolve;
+  });
+}
+
+function finishLeave(allow: boolean) {
+  leaveDialogOpen.value = false;
+  resolveLeave?.(allow);
+  resolveLeave = null;
+}
+
+async function saveAndLeave() {
+  if (leaveDialogSaving.value) return;
+  leaveDialogSaving.value = true;
+  const saved = await persist({ redirectAfterCreate: false });
+  leaveDialogSaving.value = false;
+  if (saved) finishLeave(true);
 }
 
 function remove() {
@@ -114,14 +152,18 @@ function remove() {
 }
 
 onMounted(load);
-onBeforeRouteLeave(() => !dirty.value || window.confirm('Memo 还有未保存的修改，确定离开吗？'));
+onBeforeRouteLeave(() => {
+  if (!dirty.value) return true;
+  if (saving.value) return false;
+  return requestLeaveDecision();
+});
 </script>
 
 <template>
   <PageFrame :kicker="isNew ? 'NEW MEMO' : 'MEMO DETAIL'" :title="isNew ? '新建 Memo' : 'Memo 详情'" subtitle="把需要记住的内容先收集下来。">
     <template #actions>
-      <Button @click="router.push('/memory')">返回时间流</Button>
-      <Button v-if="memo" danger @click="remove">删除</Button>
+      <Button :disabled="saving" @click="router.push('/memory')">返回时间流</Button>
+      <Button v-if="memo" danger :disabled="saving" @click="remove">删除</Button>
       <Button type="primary" :loading="saving" @click="save">保存</Button>
     </template>
 
@@ -150,5 +192,23 @@ onBeforeRouteLeave(() => !dirty.value || window.confirm('Memo 还有未保存的
         </div>
       </div>
     </Card>
+
+    <Modal
+      v-model:open="leaveDialogOpen"
+      centered
+      :closable="false"
+      :keyboard="false"
+      :mask-closable="false"
+      :footer="null"
+      wrap-class-name="memo-unsaved-modal"
+      title="保存更改后再离开？"
+    >
+      <p>当前 Memo 有未保存的内容，你可以先保存，或放弃这些修改。</p>
+      <div class="memo-unsaved-actions">
+        <Button @click="finishLeave(false)">继续编辑</Button>
+        <Button danger :disabled="leaveDialogSaving" @click="finishLeave(true)">放弃修改</Button>
+        <Button type="primary" :loading="leaveDialogSaving" @click="saveAndLeave">保存并离开</Button>
+      </div>
+    </Modal>
   </PageFrame>
 </template>

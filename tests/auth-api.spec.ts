@@ -13,17 +13,14 @@ describe('cookie session API', () => {
     requestClient.get
       .mockResolvedValueOnce({ loggedIn: true, user: { role: 'user', username: 'admin' } })
       .mockResolvedValueOnce({
-        algorithm: 'RSA-OAEP-256+A256GCM',
+        algorithm: 'RSA-OAEP-256',
         keyId: 'key-id',
         publicKey: 'public-key',
       });
     requestClient.post.mockResolvedValue({ loggedIn: false, user: null });
     const { encryptPassword } = await import('#/api/login-crypto');
     vi.mocked(encryptPassword).mockResolvedValue({
-      algorithm: 'RSA-OAEP-256+A256GCM',
       ciphertext: 'ciphertext',
-      encryptedKey: 'encrypted-key',
-      iv: 'iv',
       keyId: 'key-id',
     });
     const { fetchSession, login, logout, sessionUser } = await import('#/api/auth');
@@ -35,13 +32,8 @@ describe('cookie session API', () => {
     expect(requestClient.get).toHaveBeenCalledWith('/api/auth/session');
     expect(requestClient.get).toHaveBeenNthCalledWith(2, '/api/auth/encryption-key');
     expect(requestClient.post).toHaveBeenNthCalledWith(1, '/api/auth/login', {
-      encryptedPassword: {
-        algorithm: 'RSA-OAEP-256+A256GCM',
-        ciphertext: 'ciphertext',
-        encryptedKey: 'encrypted-key',
-        iv: 'iv',
-        keyId: 'key-id',
-      },
+      encryptedPassword: 'ciphertext',
+      keyId: 'key-id',
       username: 'admin',
     });
     expect(JSON.stringify(requestClient.post.mock.calls[0][1])).not.toContain('secret');

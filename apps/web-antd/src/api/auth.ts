@@ -28,11 +28,12 @@ function login(credentials: { password: string; username: string }) {
   return requestClient
     .get<LoginEncryptionKey>('/api/auth/encryption-key')
     .then((encryptionKey) =>
-      encryptPassword(credentials.password, credentials.username, encryptionKey),
+      encryptPassword(credentials.password, encryptionKey),
     )
     .then((encryptedPassword) =>
       requestClient.post<SessionResponse>('/api/auth/login', {
-        encryptedPassword,
+        encryptedPassword: encryptedPassword.ciphertext,
+        keyId: encryptedPassword.keyId,
         username: credentials.username,
       }),
     );

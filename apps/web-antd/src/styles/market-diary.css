@@ -725,6 +725,19 @@ button:active {
   max-width: calc(100vw - 2rem);
 }
 
+.memo-unsaved-modal .ant-modal {
+  max-width: min(30rem, calc(100vw - 2rem));
+}
+
+.memo-unsaved-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
 .memo-modal-body {
   display: grid;
   gap: 1rem;

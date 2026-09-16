@@ -22,7 +22,7 @@ function decodeBase64Url(value: string) {
 }
 
 describe('login password encryption', () => {
-  it('round-trips through RSA-OAEP and AES-GCM without exposing plaintext', async () => {
+  it('round-trips through direct RSA-OAEP without exposing plaintext', async () => {
     const keyPair = await cryptoApi.subtle.generateKey(
       {
         hash: 'SHA-256',
@@ -42,31 +42,16 @@ describe('login password encryption', () => {
     const username = 'admin';
     const password = 'secret密码';
 
-    const encrypted = await encryptPassword(password, username, encryptionKey);
-    const encryptedAesKey = await cryptoApi.subtle.decrypt(
+    const encrypted = await encryptPassword(password, encryptionKey);
+    const plaintext = await cryptoApi.subtle.decrypt(
       { name: 'RSA-OAEP' },
       keyPair.privateKey,
-      decodeBase64Url(encrypted.encryptedKey),
-    );
-    const aesKey = await cryptoApi.subtle.importKey(
-      'raw',
-      encryptedAesKey,
-      { name: 'AES-GCM' },
-      false,
-      ['decrypt'],
-    );
-    const plaintext = await cryptoApi.subtle.decrypt(
-      {
-        additionalData: new TextEncoder().encode(`login:v1\n${encryptionKey.keyId}\n${username}`),
-        iv: decodeBase64Url(encrypted.iv),
-        name: 'AES-GCM',
-      },
-      aesKey,
       decodeBase64Url(encrypted.ciphertext),
     );
 
     expect(new TextDecoder().decode(plaintext)).toBe(password);
     expect(JSON.stringify(encrypted)).not.toContain(password);
+    expect(encrypted.keyId).toBe(encryptionKey.keyId);
   });
 
   it('uses fresh random encryption values for each submission', async () => {
@@ -87,11 +72,32 @@ describe('login password encryption', () => {
       publicKey: encodeBase64Url(publicDer),
     };
 
-    const first = await encryptPassword('secret', 'admin', encryptionKey);
-    const second = await encryptPassword('secret', 'admin', encryptionKey);
+    const first = await encryptPassword('secret', encryptionKey);
+    const second = await encryptPassword('secret', encryptionKey);
 
-    expect(first.iv).not.toBe(second.iv);
-    expect(first.encryptedKey).not.toBe(second.encryptedKey);
     expect(first.ciphertext).not.toBe(second.ciphertext);
+  });
+
+  it('rejects passwords longer than the RSA plaintext limit', async () => {
+    const keyPair = await cryptoApi.subtle.generateKey(
+      {
+        hash: 'SHA-256',
+        modulusLength: 3072,
+        name: 'RSA-OAEP',
+        publicExponent: new Uint8Array([1, 0, 1]),
+      },
+      true,
+      ['encrypt', 'decrypt'],
+    );
+    const publicDer = await cryptoApi.subtle.exportKey('spki', keyPair.publicKey);
+    const encryptionKey: LoginEncryptionKey = {
+      algorithm: LOGIN_ENCRYPTION_ALGORITHM,
+      keyId: 'c'.repeat(64),
+      publicKey: encodeBase64Url(publicDer),
+    };
+
+    await expect(encryptPassword('a'.repeat(319), encryptionKey)).rejects.toThrow(
+      '密码过长',
+    );
   });
 });
