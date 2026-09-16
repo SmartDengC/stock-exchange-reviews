@@ -156,6 +156,28 @@ Trading Cloud 后端通过 `TRADING_SINA_QUOTES_URL=http://前端服务器IP:809
 
 前端镜像构建时会把 `BACKEND_API_HOST` 注入 Nginx。普通 API 请求读取超时为 120 秒，附件上传、附件下载和 Excel 导出为 300 秒。
 
+### 登录传输安全说明
+
+登录密码现在使用纯 JavaScript RSA-OAEP-SHA256 加密，即使通过 `http://前端服务器IP:8090` 访问，请求体也不会出现原始密码。公网 HTTP 仍允许中间人替换页面脚本或公钥，不能抵御主动攻击；生产环境仍建议绑定域名并启用 HTTPS。
+
+例如在前端服务器上用 Caddy 将域名代理到现有 Nginx 容器（DNS 的 A 记录先指向前端服务器公网 IP）：
+
+```caddyfile
+se.example.com {
+    reverse_proxy 127.0.0.1:8090
+}
+```
+
+使用 `https://se.example.com/login` 访问时，在后端 `.env` 中配置 HTTPS 前端地址：
+
+```dotenv
+TRADING_FRONTEND_ORIGINS=https://se.example.com
+TRADING_PUBLIC_BASE_URL=https://se.example.com
+TRADING_SESSION_SECURE=true
+```
+
+修改后重启后端 API 和前端代理；浏览器开发者工具中 `window.isSecureContext` 应为 `true`。
+
 ### 后端服务器
 
 在 `trading-cloud/deploy/aliyun/.env` 中填写前端服务器的实际公开地址：

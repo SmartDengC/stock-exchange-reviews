@@ -3,7 +3,7 @@
 import { Buffer } from 'node:buffer';
 import { webcrypto } from 'node:crypto';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   encryptPassword,
@@ -22,6 +22,35 @@ function decodeBase64Url(value: string) {
 }
 
 describe('login password encryption', () => {
+  it('works on an HTTP page without depending on Web Crypto subtle APIs', async () => {
+    vi.stubGlobal('isSecureContext', false);
+
+    const keyPair = await cryptoApi.subtle.generateKey(
+      {
+        hash: 'SHA-256',
+        modulusLength: 3072,
+        name: 'RSA-OAEP',
+        publicExponent: new Uint8Array([1, 0, 1]),
+      },
+      true,
+      ['encrypt', 'decrypt'],
+    );
+    const publicDer = await cryptoApi.subtle.exportKey('spki', keyPair.publicKey);
+    const encrypted = await encryptPassword('secret', {
+      algorithm: LOGIN_ENCRYPTION_ALGORITHM,
+      keyId: 'a'.repeat(64),
+      publicKey: encodeBase64Url(publicDer),
+    });
+    const plaintext = await cryptoApi.subtle.decrypt(
+      { name: 'RSA-OAEP' },
+      keyPair.privateKey,
+      decodeBase64Url(encrypted.ciphertext),
+    );
+
+    expect(new TextDecoder().decode(plaintext)).toBe('secret');
+    vi.unstubAllGlobals();
+  });
+
   it('round-trips through direct RSA-OAEP without exposing plaintext', async () => {
     const keyPair = await cryptoApi.subtle.generateKey(
       {
